@@ -8,3 +8,4 @@ target/
 *.trace.db
 .env
 application-local.properties
+account-service/data/
