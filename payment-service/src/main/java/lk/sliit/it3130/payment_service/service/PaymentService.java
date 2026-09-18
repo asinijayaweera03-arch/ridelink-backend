@@ -1,4 +1,4 @@
-package lk.sliit.it3130.payment_service.service;
+ package lk.sliit.it3130.payment_service.service;
 
 import lk.sliit.it3130.payment_service.dto.PaymentRequest;
 import lk.sliit.it3130.payment_service.dto.PaymentResponse;
@@ -11,24 +11,22 @@ import org.springframework.stereotype.Service;
 @Service
 public class PaymentService {
 
-    // Documented fare calculation rule (same base as estimation, plus time + peak surcharge)
     private static final double BASE_FARE = 100.0;
     private static final double PER_KM_RATE = 60.0;
     private static final double PER_MIN_RATE = 5.0;
     private static final double PEAK_SURCHARGE_MULTIPLIER = 1.2;
-
-    // Simulated failure threshold: any amount above this "declines" for demo purposes
     private static final double SIMULATED_DECLINE_THRESHOLD = 100000.0;
 
     private final PaymentRepository paymentRepository;
+    private final ReceiptService receiptService;
 
-    public PaymentService(PaymentRepository paymentRepository) {
+    public PaymentService(PaymentRepository paymentRepository, ReceiptService receiptService) {
         this.paymentRepository = paymentRepository;
+        this.receiptService = receiptService;
     }
 
     public PaymentResponse processPayment(PaymentRequest request) {
 
-        // Prevent duplicate payment for the same ride
         paymentRepository.findByRideId(request.getRideId()).ifPresent(existing -> {
             throw new PaymentException("A payment already exists for ride ID: " + request.getRideId());
         });
@@ -56,7 +54,6 @@ public class PaymentService {
             throw new PaymentException("Invalid payment method: " + request.getPaymentMethod());
         }
 
-        // Simulate payment processing outcome
         if (fare > SIMULATED_DECLINE_THRESHOLD) {
             payment.setStatus(Payment.PaymentStatus.FAILED);
         } else {
@@ -64,6 +61,11 @@ public class PaymentService {
         }
 
         Payment saved = paymentRepository.save(payment);
+
+        if (saved.getStatus() == Payment.PaymentStatus.SUCCESS) {
+            receiptService.generateReceipt(saved, request.getDistanceKm(), request.getDurationMin(), request.isPeakHour());
+        }
+
         return new PaymentResponse(saved);
     }
 
