@@ -14,6 +14,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/h2-console/**").permitAll()
             .requestMatchers("/api/accounts/register").permitAll()
+            .requestMatchers("/api/auth/login").permitAll()
             .requestMatchers("/error").permitAll()
             .anyRequest().authenticated()
         )
