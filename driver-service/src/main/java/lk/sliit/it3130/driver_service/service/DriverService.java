@@ -11,6 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import lk.sliit.it3130.driver_service.dto.AvailableDriverResponse;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class DriverService {
@@ -65,6 +68,30 @@ public class DriverService {
 
         Driver updated = driverRepository.save(driver);
         return mapToResponse(updated);
+    }
+        public List<AvailableDriverResponse> getAvailableDrivers(String serviceArea) {
+
+        List<Driver> drivers;
+
+        if (serviceArea != null && !serviceArea.isBlank()) {
+            drivers = driverRepository.findByAvailabilityStatusAndServiceArea(AvailabilityStatus.AVAILABLE, serviceArea);
+        } else {
+            drivers = driverRepository.findByAvailabilityStatus(AvailabilityStatus.AVAILABLE);
+        }
+
+        return drivers.stream()
+                .map(this::mapToAvailableDriverResponse)
+                .collect(Collectors.toList());
+    }
+
+    private AvailableDriverResponse mapToAvailableDriverResponse(Driver driver) {
+        AvailableDriverResponse response = new AvailableDriverResponse();
+        response.setId(driver.getId());
+        response.setName(driver.getName());
+        response.setServiceArea(driver.getServiceArea());
+        response.setCurrentLatitude(driver.getCurrentLatitude());
+        response.setCurrentLongitude(driver.getCurrentLongitude());
+        return response;
     }
     
 
