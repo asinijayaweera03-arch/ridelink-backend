@@ -1,7 +1,9 @@
 package lk.sliit.it3130.driver_service.controller;
 
+import lk.sliit.it3130.driver_service.dto.AvailabilityUpdateRequest;
 import lk.sliit.it3130.driver_service.dto.DriverRegisterRequest;
 import lk.sliit.it3130.driver_service.dto.DriverRegisterResponse;
+import lk.sliit.it3130.driver_service.dto.LocationUpdateRequest;
 import lk.sliit.it3130.driver_service.dto.VehicleRequest;
 import lk.sliit.it3130.driver_service.dto.VehicleResponse;
 import lk.sliit.it3130.driver_service.service.DriverService;
@@ -37,6 +39,18 @@ public class DriverController {
     @GetMapping("/{id}/vehicle")
     public ResponseEntity<VehicleResponse> getVehicle(@PathVariable Long id) {
         VehicleResponse response = vehicleService.getVehicleByDriverId(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/availability")
+    public ResponseEntity<DriverRegisterResponse> updateAvailability(@PathVariable Long id, @Valid @RequestBody AvailabilityUpdateRequest request) {
+        DriverRegisterResponse response = driverService.updateAvailability(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/location")
+    public ResponseEntity<DriverRegisterResponse> updateLocation(@PathVariable Long id, @Valid @RequestBody LocationUpdateRequest request) {
+        DriverRegisterResponse response = driverService.updateLocation(id, request);
         return ResponseEntity.ok(response);
     }
 }
