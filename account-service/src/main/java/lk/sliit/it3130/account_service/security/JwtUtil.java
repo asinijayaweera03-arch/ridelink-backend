@@ -1,5 +1,7 @@
 package lk.sliit.it3130.account_service.security;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,22 +15,15 @@ import java.util.Date;
 public class JwtUtil {
 
     private final SecretKey key;
-
     private static final long EXPIRATION_MS = 3600000; // 1 hour
 
     public JwtUtil(@Value("${jwt.secret}") String secret) {
-        this.key = Keys.hmacShaKeyFor(
-                secret.getBytes(StandardCharsets.UTF_8)
-        );
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateToken(String email, String role) {
-
         Date now = new Date();
-
-        Date expiry = new Date(
-                now.getTime() + EXPIRATION_MS
-        );
+        Date expiry = new Date(now.getTime() + EXPIRATION_MS);
 
         return Jwts.builder()
                 .subject(email)
@@ -37,5 +32,25 @@ public class JwtUtil {
                 .expiration(expiry)
                 .signWith(key)
                 .compact();
+    }
+
+    public Claims validateAndExtractClaims(String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (JwtException | IllegalArgumentException ex) {
+            throw new JwtException("Invalid or expired token");
+        }
+    }
+
+    public String extractEmail(String token) {
+        return validateAndExtractClaims(token).getSubject();
+    }
+
+    public String extractRole(String token) {
+        return validateAndExtractClaims(token).get("role", String.class);
     }
 }
