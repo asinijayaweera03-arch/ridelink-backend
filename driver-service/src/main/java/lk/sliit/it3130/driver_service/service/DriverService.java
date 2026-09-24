@@ -7,10 +7,11 @@ import lk.sliit.it3130.driver_service.dto.DriverRegisterResponse;
 import lk.sliit.it3130.driver_service.entity.Driver;
 import lk.sliit.it3130.driver_service.enums.AvailabilityStatus;
 import lk.sliit.it3130.driver_service.repository.DriverRepository;
+import lk.sliit.it3130.driver_service.exception.DriverNotFoundException;
+import lk.sliit.it3130.driver_service.exception.DuplicateLicenseException;
+import lk.sliit.it3130.driver_service.exception.InvalidAvailabilityException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 import lk.sliit.it3130.driver_service.dto.AvailableDriverResponse;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,7 +26,7 @@ public class DriverService {
 
         // Duplicate license number check
         if (driverRepository.findByLicenseNumber(request.getLicenseNumber()).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "License number already registered");
+            throw new DuplicateLicenseException("License number already registered");
         }
 
         Driver driver = new Driver();
@@ -43,10 +44,10 @@ public class DriverService {
     public DriverRegisterResponse updateAvailability(Long driverId, AvailabilityUpdateRequest request) {
 
         Driver driver = driverRepository.findById(driverId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Driver not found"));
+                .orElseThrow(() -> new DriverNotFoundException("Driver not found"));
 
         if (request.getAvailabilityStatus() == AvailabilityStatus.ON_TRIP) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot manually set status to ON_TRIP");
+            throw new InvalidAvailabilityException("Cannot manually set status to ON_TRIP");
         }
 
         driver.setAvailabilityStatus(request.getAvailabilityStatus());
@@ -58,7 +59,7 @@ public class DriverService {
     public DriverRegisterResponse updateLocation(Long driverId, LocationUpdateRequest request) {
 
         Driver driver = driverRepository.findById(driverId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Driver not found"));
+                .orElseThrow(() -> new DriverNotFoundException("Driver not found"));
 
         driver.setCurrentLatitude(request.getCurrentLatitude());
         driver.setCurrentLongitude(request.getCurrentLongitude());
@@ -69,7 +70,8 @@ public class DriverService {
         Driver updated = driverRepository.save(driver);
         return mapToResponse(updated);
     }
-        public List<AvailableDriverResponse> getAvailableDrivers(String serviceArea) {
+
+    public List<AvailableDriverResponse> getAvailableDrivers(String serviceArea) {
 
         List<Driver> drivers;
 
@@ -93,7 +95,6 @@ public class DriverService {
         response.setCurrentLongitude(driver.getCurrentLongitude());
         return response;
     }
-    
 
     private DriverRegisterResponse mapToResponse(Driver driver) {
         DriverRegisterResponse response = new DriverRegisterResponse();
