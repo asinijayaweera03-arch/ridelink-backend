@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,24 +35,28 @@ public class DriverController {
     }
 
     @PostMapping("/{id}/vehicle")
+    @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<VehicleResponse> attachVehicle(@PathVariable Long id, @Valid @RequestBody VehicleRequest request) {
         VehicleResponse response = vehicleService.attachVehicle(id, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/{id}/vehicle")
+    @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<VehicleResponse> getVehicle(@PathVariable Long id) {
         VehicleResponse response = vehicleService.getVehicleByDriverId(id);
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{id}/availability")
+    @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<DriverRegisterResponse> updateAvailability(@PathVariable Long id, @Valid @RequestBody AvailabilityUpdateRequest request) {
         DriverRegisterResponse response = driverService.updateAvailability(id, request);
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{id}/location")
+    @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<DriverRegisterResponse> updateLocation(@PathVariable Long id, @Valid @RequestBody LocationUpdateRequest request) {
         DriverRegisterResponse response = driverService.updateLocation(id, request);
         return ResponseEntity.ok(response);
