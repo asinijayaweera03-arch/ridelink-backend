@@ -4,12 +4,13 @@ import lk.sliit.it3130.driver_service.dto.VehicleRequest;
 import lk.sliit.it3130.driver_service.dto.VehicleResponse;
 import lk.sliit.it3130.driver_service.entity.Driver;
 import lk.sliit.it3130.driver_service.entity.Vehicle;
+import lk.sliit.it3130.driver_service.exception.DriverNotFoundException;
+import lk.sliit.it3130.driver_service.exception.DuplicateVehicleException;
+import lk.sliit.it3130.driver_service.exception.VehicleNotFoundException;
 import lk.sliit.it3130.driver_service.repository.DriverRepository;
 import lk.sliit.it3130.driver_service.repository.VehicleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class VehicleService {
@@ -23,10 +24,10 @@ public class VehicleService {
     public VehicleResponse attachVehicle(Long driverId, VehicleRequest request) {
 
         Driver driver = driverRepository.findById(driverId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Driver not found"));
+                .orElseThrow(() -> new DriverNotFoundException("Driver not found"));
 
         if (vehicleRepository.findByDriverId(driverId).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Driver already has a vehicle attached");
+            throw new DuplicateVehicleException("Driver already has a vehicle attached");
         }
 
         Vehicle vehicle = new Vehicle();
@@ -42,7 +43,7 @@ public class VehicleService {
 
     public VehicleResponse getVehicleByDriverId(Long driverId) {
         Vehicle vehicle = vehicleRepository.findByDriverId(driverId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Vehicle not found for this driver"));
+                .orElseThrow(() -> new VehicleNotFoundException("Vehicle not found for this driver"));
         return mapToResponse(vehicle);
     }
 
