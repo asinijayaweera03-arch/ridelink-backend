@@ -21,18 +21,46 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+
             .authorizeHttpRequests(auth -> auth
+
+                // H2 Console
                 .requestMatchers("/h2-console/**").permitAll()
+
+                // Error endpoint
                 .requestMatchers("/error").permitAll()
+
+                // Swagger / OpenAPI
+                .requestMatchers(
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**"
+                ).permitAll()
+
+                // Public Account endpoints
                 .requestMatchers("/api/accounts/register").permitAll()
                 .requestMatchers("/api/auth/login").permitAll()
+
+                // Admin-only endpoints
                 .requestMatchers("/api/accounts/*/status").hasRole("ADMIN")
                 .requestMatchers("/api/accounts/*/role").hasRole("ADMIN")
+
+                // All remaining endpoints require authentication
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+
+            .addFilterBefore(
+                jwtAuthFilter,
+                UsernamePasswordAuthenticationFilter.class
+            )
+
+            .headers(headers ->
+                headers.frameOptions(frame -> frame.sameOrigin())
+            );
 
         return http.build();
     }
