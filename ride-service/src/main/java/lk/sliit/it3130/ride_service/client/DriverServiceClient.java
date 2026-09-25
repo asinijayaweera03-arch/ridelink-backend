@@ -1,12 +1,14 @@
 package lk.sliit.it3130.ride_service.client;
 
 import lk.sliit.it3130.ride_service.dto.AvailableDriverResponse;
+import lk.sliit.it3130.ride_service.exception.DriverServiceUnavailableException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -53,14 +55,28 @@ public class DriverServiceClient {
      * Gets all currently available drivers from Driver Service.
      *
      * @return list of available drivers
+     * @throws DriverServiceUnavailableException when Driver Service
+     *         cannot be reached or returns an HTTP error
      */
     public List<AvailableDriverResponse> getAvailableDrivers() {
 
-        return restClient
-                .method(HttpMethod.GET)
-                .uri("/api/drivers/available")
-                .retrieve()
-                .body(new ParameterizedTypeReference<
-                        List<AvailableDriverResponse>>() {});
+        try {
+
+            List<AvailableDriverResponse> drivers = restClient
+                    .method(HttpMethod.GET)
+                    .uri("/api/drivers/available")
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<
+                            List<AvailableDriverResponse>>() {});
+
+            return drivers != null ? drivers : List.of();
+
+        } catch (RestClientException exception) {
+
+            throw new DriverServiceUnavailableException(
+                    "Driver Service is currently unavailable",
+                    exception
+            );
+        }
     }
 }

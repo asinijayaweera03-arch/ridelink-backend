@@ -7,6 +7,7 @@ import lk.sliit.it3130.ride_service.dto.PaymentRequest;
 import lk.sliit.it3130.ride_service.dto.RideCompletionRequest;
 import lk.sliit.it3130.ride_service.dto.RideRequest;
 import lk.sliit.it3130.ride_service.dto.RideResponse;
+import lk.sliit.it3130.ride_service.exception.NoAvailableDriverException;
 import lk.sliit.it3130.ride_service.model.Ride;
 import lk.sliit.it3130.ride_service.model.RideStatus;
 import lk.sliit.it3130.ride_service.repository.RideRepository;
@@ -65,17 +66,21 @@ public class RideService {
         List<AvailableDriverResponse> availableDrivers =
                 driverServiceClient.getAvailableDrivers();
 
-        // Assign the first available driver, if one exists
-        if (!availableDrivers.isEmpty()) {
-
-            AvailableDriverResponse selectedDriver =
-                    availableDrivers.get(0);
-
-            ride.setDriverId(selectedDriver.getId());
-            ride.setStatus(RideStatus.ASSIGNED);
+        // Stop the request if no driver is currently available
+        if (availableDrivers.isEmpty()) {
+            throw new NoAvailableDriverException(
+                    "No available driver found"
+            );
         }
 
-        // If no driver is assigned, @PrePersist sets status to REQUESTED
+        // Assign the first available driver
+        AvailableDriverResponse selectedDriver =
+                availableDrivers.get(0);
+
+        ride.setDriverId(selectedDriver.getId());
+        ride.setStatus(RideStatus.ASSIGNED);
+
+        // Save only after a driver has been assigned
         Ride savedRide = rideRepository.save(ride);
 
         return mapToResponse(savedRide);
@@ -232,8 +237,13 @@ public class RideService {
         response.setPickupLatitude(ride.getPickupLatitude());
         response.setPickupLongitude(ride.getPickupLongitude());
 
-        response.setDestinationLatitude(ride.getDestinationLatitude());
-        response.setDestinationLongitude(ride.getDestinationLongitude());
+        response.setDestinationLatitude(
+                ride.getDestinationLatitude()
+        );
+
+        response.setDestinationLongitude(
+                ride.getDestinationLongitude()
+        );
 
         response.setDistanceKm(ride.getDistanceKm());
 

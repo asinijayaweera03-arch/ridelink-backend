@@ -6,6 +6,8 @@ import lk.sliit.it3130.ride_service.dto.AvailableDriverResponse;
 import lk.sliit.it3130.ride_service.dto.RideCompletionRequest;
 import lk.sliit.it3130.ride_service.dto.RideRequest;
 import lk.sliit.it3130.ride_service.dto.RideResponse;
+import lk.sliit.it3130.ride_service.exception.DriverServiceUnavailableException;
+import lk.sliit.it3130.ride_service.exception.NoAvailableDriverException;
 import lk.sliit.it3130.ride_service.model.Ride;
 import lk.sliit.it3130.ride_service.model.RideStatus;
 import lk.sliit.it3130.ride_service.repository.RideRepository;
@@ -66,6 +68,60 @@ class RideServiceTest {
 
         verify(driverServiceClient).getAvailableDrivers();
         verify(rideRepository).save(any(Ride.class));
+    }
+
+    @Test
+    void createRideShouldFailWhenNoDriverIsAvailable() {
+
+        RideRequest request = createRideRequest();
+
+        when(driverServiceClient.getAvailableDrivers())
+                .thenReturn(List.of());
+
+        NoAvailableDriverException exception =
+                assertThrows(
+                        NoAvailableDriverException.class,
+                        () -> rideService.createRide(request)
+                );
+
+        assertEquals(
+                "No available driver found",
+                exception.getMessage()
+        );
+
+        verify(driverServiceClient).getAvailableDrivers();
+
+        verify(rideRepository, never())
+                .save(any(Ride.class));
+    }
+
+    @Test
+    void createRideShouldFailWhenDriverServiceIsUnavailable() {
+
+        RideRequest request = createRideRequest();
+
+        when(driverServiceClient.getAvailableDrivers())
+                .thenThrow(
+                        new DriverServiceUnavailableException(
+                                "Driver Service is currently unavailable"
+                        )
+                );
+
+        DriverServiceUnavailableException exception =
+                assertThrows(
+                        DriverServiceUnavailableException.class,
+                        () -> rideService.createRide(request)
+                );
+
+        assertEquals(
+                "Driver Service is currently unavailable",
+                exception.getMessage()
+        );
+
+        verify(driverServiceClient).getAvailableDrivers();
+
+        verify(rideRepository, never())
+                .save(any(Ride.class));
     }
 
     @Test
@@ -205,6 +261,7 @@ class RideServiceTest {
         request.setPickupLongitude(79.8612);
         request.setDestinationLatitude(7.2906);
         request.setDestinationLongitude(80.6337);
+        request.setDistanceKm(115.0);
 
         return request;
     }
@@ -221,6 +278,7 @@ class RideServiceTest {
         ride.setPickupLongitude(79.8612);
         ride.setDestinationLatitude(7.2906);
         ride.setDestinationLongitude(80.6337);
+        ride.setDistanceKm(115.0);
         ride.setStatus(status);
 
         return ride;
