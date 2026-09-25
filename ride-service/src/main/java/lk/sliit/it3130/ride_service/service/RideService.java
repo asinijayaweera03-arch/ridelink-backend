@@ -1,10 +1,15 @@
 package lk.sliit.it3130.ride_service.service;
 
+import lk.sliit.it3130.ride_service.client.DriverServiceClient;
+import lk.sliit.it3130.ride_service.dto.AvailableDriverResponse;
 import lk.sliit.it3130.ride_service.dto.RideRequest;
 import lk.sliit.it3130.ride_service.dto.RideResponse;
 import lk.sliit.it3130.ride_service.model.Ride;
 import lk.sliit.it3130.ride_service.repository.RideRepository;
 import org.springframework.stereotype.Service;
+import lk.sliit.it3130.ride_service.model.RideStatus;
+
+import java.util.List;
 
 /**
  * Contains business logic related to ride management.
@@ -13,12 +18,17 @@ import org.springframework.stereotype.Service;
 public class RideService {
 
     private final RideRepository rideRepository;
+    private final DriverServiceClient driverServiceClient;
 
     /**
-     * Constructor injection for RideRepository.
+     * Constructor injection for required dependencies.
      */
-    public RideService(RideRepository rideRepository) {
+    public RideService(
+            RideRepository rideRepository,
+            DriverServiceClient driverServiceClient) {
+
         this.rideRepository = rideRepository;
+        this.driverServiceClient = driverServiceClient;
     }
 
     /**
@@ -41,6 +51,18 @@ public class RideService {
 
         ride.setDestinationLatitude(request.getDestinationLatitude());
         ride.setDestinationLongitude(request.getDestinationLongitude());
+
+        // Get currently available drivers from Driver Service
+        List<AvailableDriverResponse> availableDrivers =
+                driverServiceClient.getAvailableDrivers();
+
+        // Assign the first available driver, if one exists
+        if (!availableDrivers.isEmpty()) {
+            AvailableDriverResponse selectedDriver = availableDrivers.get(0);
+
+            ride.setDriverId(selectedDriver.getId());
+            ride.setStatus(RideStatus.ASSIGNED);
+}
 
         // Save the ride.
         // Ride status and createdAt are automatically set by @PrePersist.
