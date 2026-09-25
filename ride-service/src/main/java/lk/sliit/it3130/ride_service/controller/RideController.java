@@ -28,9 +28,6 @@ public class RideController {
      * Creates a new ride request.
      *
      * POST /api/rides
-     *
-     * @param request ride details received from the client
-     * @return newly created ride with HTTP 201 status
      */
     @PostMapping
     public ResponseEntity<RideResponse> createRide(
@@ -41,5 +38,61 @@ public class RideController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    /**
+     * Accepts an assigned ride.
+     *
+     * PATCH /api/rides/{id}/accept
+     */
+    @PatchMapping("/{id}/accept")
+    public ResponseEntity<RideResponse> acceptRide(
+            @PathVariable Long id) {
+
+        RideResponse response = rideService.acceptRide(id);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Starts an accepted ride.
+     *
+     * PATCH /api/rides/{id}/start
+     */
+    @PatchMapping("/{id}/start")
+    public ResponseEntity<RideResponse> startRide(
+            @PathVariable Long id) {
+
+        RideResponse response = rideService.startRide(id);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Completes a ride that is in progress.
+     *
+     * PATCH /api/rides/{id}/complete
+     */
+    @PatchMapping("/{id}/complete")
+    public ResponseEntity<RideResponse> completeRide(
+            @PathVariable Long id) {
+
+        RideResponse response = rideService.completeRide(id);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Cancels a ride.
+     *
+     * PATCH /api/rides/{id}/cancel
+     */
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<RideResponse> cancelRide(
+            @PathVariable Long id) {
+
+        RideResponse response = rideService.cancelRide(id);
+
+        return ResponseEntity.ok(response);
     }
 }
