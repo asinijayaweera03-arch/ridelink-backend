@@ -5,9 +5,9 @@ import lk.sliit.it3130.ride_service.dto.AvailableDriverResponse;
 import lk.sliit.it3130.ride_service.dto.RideRequest;
 import lk.sliit.it3130.ride_service.dto.RideResponse;
 import lk.sliit.it3130.ride_service.model.Ride;
+import lk.sliit.it3130.ride_service.model.RideStatus;
 import lk.sliit.it3130.ride_service.repository.RideRepository;
 import org.springframework.stereotype.Service;
-import lk.sliit.it3130.ride_service.model.RideStatus;
 
 import java.util.List;
 
@@ -39,7 +39,6 @@ public class RideService {
      */
     public RideResponse createRide(RideRequest request) {
 
-        // Convert request DTO into Ride entity
         Ride ride = new Ride();
 
         ride.setRiderId(request.getRiderId());
@@ -58,18 +57,121 @@ public class RideService {
 
         // Assign the first available driver, if one exists
         if (!availableDrivers.isEmpty()) {
-            AvailableDriverResponse selectedDriver = availableDrivers.get(0);
+
+            AvailableDriverResponse selectedDriver =
+                    availableDrivers.get(0);
 
             ride.setDriverId(selectedDriver.getId());
             ride.setStatus(RideStatus.ASSIGNED);
-}
+        }
 
-        // Save the ride.
-        // Ride status and createdAt are automatically set by @PrePersist.
+        // If no driver is assigned, @PrePersist sets status to REQUESTED
         Ride savedRide = rideRepository.save(ride);
 
-        // Convert saved entity into response DTO
         return mapToResponse(savedRide);
+    }
+
+    /**
+     * Accepts an assigned ride.
+     *
+     * ASSIGNED -> ACCEPTED
+     */
+    public RideResponse acceptRide(Long rideId) {
+
+        Ride ride = findRideById(rideId);
+
+        if (ride.getStatus() != RideStatus.ASSIGNED) {
+            throw new IllegalStateException(
+                    "Only an ASSIGNED ride can be accepted"
+            );
+        }
+
+        ride.setStatus(RideStatus.ACCEPTED);
+
+        Ride savedRide = rideRepository.save(ride);
+
+        return mapToResponse(savedRide);
+    }
+
+    /**
+     * Starts an accepted ride.
+     *
+     * ACCEPTED -> IN_PROGRESS
+     */
+    public RideResponse startRide(Long rideId) {
+
+        Ride ride = findRideById(rideId);
+
+        if (ride.getStatus() != RideStatus.ACCEPTED) {
+            throw new IllegalStateException(
+                    "Only an ACCEPTED ride can be started"
+            );
+        }
+
+        ride.setStatus(RideStatus.IN_PROGRESS);
+
+        Ride savedRide = rideRepository.save(ride);
+
+        return mapToResponse(savedRide);
+    }
+
+    /**
+     * Completes a ride that is currently in progress.
+     *
+     * IN_PROGRESS -> COMPLETED
+     */
+    public RideResponse completeRide(Long rideId) {
+
+        Ride ride = findRideById(rideId);
+
+        if (ride.getStatus() != RideStatus.IN_PROGRESS) {
+            throw new IllegalStateException(
+                    "Only an IN_PROGRESS ride can be completed"
+            );
+        }
+
+        ride.setStatus(RideStatus.COMPLETED);
+
+        Ride savedRide = rideRepository.save(ride);
+
+        return mapToResponse(savedRide);
+    }
+
+    /**
+     * Cancels a ride.
+     *
+     * REQUESTED / ASSIGNED / ACCEPTED -> CANCELLED
+     */
+    public RideResponse cancelRide(Long rideId) {
+
+        Ride ride = findRideById(rideId);
+
+        RideStatus currentStatus = ride.getStatus();
+
+        if (currentStatus != RideStatus.REQUESTED
+                && currentStatus != RideStatus.ASSIGNED
+                && currentStatus != RideStatus.ACCEPTED) {
+
+            throw new IllegalStateException(
+                    "Ride cannot be cancelled in its current status"
+            );
+        }
+
+        ride.setStatus(RideStatus.CANCELLED);
+
+        Ride savedRide = rideRepository.save(ride);
+
+        return mapToResponse(savedRide);
+    }
+
+    /**
+     * Finds a ride by ID.
+     */
+    private Ride findRideById(Long rideId) {
+
+        return rideRepository.findById(rideId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Ride not found"));
     }
 
     /**
