@@ -27,6 +27,7 @@ public class SecurityConfig {
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/h2-console/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/payments").permitAll()
                 .requestMatchers("/fares/**").permitAll()
                 .requestMatchers("/payments/**", "/receipts/**").authenticated()
@@ -35,6 +36,7 @@ public class SecurityConfig {
             .headers(headers -> headers.frameOptions(frame -> frame.disable()))
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(internalApiKeyFilter, JwtAuthFilter.class);
+
         return http.build();
     }
 }
