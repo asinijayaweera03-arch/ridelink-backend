@@ -1,7 +1,10 @@
 package lk.sliit.it3130.ride_service.service;
 
 import lk.sliit.it3130.ride_service.client.DriverServiceClient;
+import lk.sliit.it3130.ride_service.client.PaymentServiceClient;
 import lk.sliit.it3130.ride_service.dto.AvailableDriverResponse;
+import lk.sliit.it3130.ride_service.dto.PaymentRequest;
+import lk.sliit.it3130.ride_service.dto.RideCompletionRequest;
 import lk.sliit.it3130.ride_service.dto.RideRequest;
 import lk.sliit.it3130.ride_service.dto.RideResponse;
 import lk.sliit.it3130.ride_service.model.Ride;
@@ -19,16 +22,19 @@ public class RideService {
 
     private final RideRepository rideRepository;
     private final DriverServiceClient driverServiceClient;
+    private final PaymentServiceClient paymentServiceClient;
 
     /**
      * Constructor injection for required dependencies.
      */
     public RideService(
             RideRepository rideRepository,
-            DriverServiceClient driverServiceClient) {
+            DriverServiceClient driverServiceClient,
+            PaymentServiceClient paymentServiceClient) {
 
         this.rideRepository = rideRepository;
         this.driverServiceClient = driverServiceClient;
+        this.paymentServiceClient = paymentServiceClient;
     }
 
     /**
@@ -116,11 +122,13 @@ public class RideService {
     }
 
     /**
-     * Completes a ride that is currently in progress.
+     * Completes a ride and creates a payment.
      *
      * IN_PROGRESS -> COMPLETED
      */
-    public RideResponse completeRide(Long rideId) {
+    public RideResponse completeRide(
+            Long rideId,
+            RideCompletionRequest completionRequest) {
 
         Ride ride = findRideById(rideId);
 
@@ -130,6 +138,22 @@ public class RideService {
             );
         }
 
+        /*
+         * Send completed ride information to Payment Service.
+         * riderId in Ride Service maps to passengerId in Payment Service.
+         */
+        PaymentRequest paymentRequest = new PaymentRequest(
+                ride.getId(),
+                ride.getRiderId(),
+                completionRequest.getDistanceKm(),
+                completionRequest.getDurationMin(),
+                completionRequest.getPeakHour(),
+                completionRequest.getPaymentMethod()
+        );
+
+        paymentServiceClient.createPayment(paymentRequest);
+
+        // Mark the ride as completed after payment creation succeeds
         ride.setStatus(RideStatus.COMPLETED);
 
         Ride savedRide = rideRepository.save(ride);
