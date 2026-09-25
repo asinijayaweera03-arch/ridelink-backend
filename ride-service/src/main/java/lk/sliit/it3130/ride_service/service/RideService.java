@@ -48,6 +48,7 @@ public class RideService {
         Ride ride = new Ride();
 
         ride.setRiderId(request.getRiderId());
+
         ride.setPickupLocation(request.getPickupLocation());
         ride.setDestination(request.getDestination());
 
@@ -56,6 +57,9 @@ public class RideService {
 
         ride.setDestinationLatitude(request.getDestinationLatitude());
         ride.setDestinationLongitude(request.getDestinationLongitude());
+
+        // Store the estimated/requested ride distance
+        ride.setDistanceKm(request.getDistanceKm());
 
         // Get currently available drivers from Driver Service
         List<AvailableDriverResponse> availableDrivers =
@@ -75,6 +79,19 @@ public class RideService {
         Ride savedRide = rideRepository.save(ride);
 
         return mapToResponse(savedRide);
+    }
+
+    /**
+     * Returns a ride by its ID.
+     *
+     * @param rideId ride identifier
+     * @return ride details
+     */
+    public RideResponse getRideById(Long rideId) {
+
+        Ride ride = findRideById(rideId);
+
+        return mapToResponse(ride);
     }
 
     /**
@@ -189,7 +206,7 @@ public class RideService {
     }
 
     /**
-     * Finds a ride by ID.
+     * Finds a Ride entity by ID.
      */
     private Ride findRideById(Long rideId) {
 
@@ -217,6 +234,8 @@ public class RideService {
 
         response.setDestinationLatitude(ride.getDestinationLatitude());
         response.setDestinationLongitude(ride.getDestinationLongitude());
+
+        response.setDistanceKm(ride.getDistanceKm());
 
         response.setStatus(ride.getStatus());
         response.setCreatedAt(ride.getCreatedAt());

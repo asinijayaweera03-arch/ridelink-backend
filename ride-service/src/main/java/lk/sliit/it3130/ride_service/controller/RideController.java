@@ -42,6 +42,20 @@ public class RideController {
     }
 
     /**
+     * Returns a ride by ID.
+     *
+     * GET /api/rides/{id}
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<RideResponse> getRideById(
+            @PathVariable Long id) {
+
+        RideResponse response = rideService.getRideById(id);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Accepts an assigned ride.
      *
      * PATCH /api/rides/{id}/accept

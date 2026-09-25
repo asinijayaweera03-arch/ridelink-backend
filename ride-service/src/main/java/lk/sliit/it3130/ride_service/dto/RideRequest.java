@@ -4,6 +4,7 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 /**
  * Request DTO used when a rider creates a new ride request.
@@ -38,6 +39,10 @@ public class RideRequest {
     @DecimalMin(value = "-180.0", message = "Destination longitude must be at least -180")
     @DecimalMax(value = "180.0", message = "Destination longitude must be at most 180")
     private Double destinationLongitude;
+
+    @NotNull(message = "Distance is required")
+    @Positive(message = "Distance must be greater than 0")
+    private Double distanceKm;
 
     public Long getRiderId() {
         return riderId;
@@ -93,5 +98,13 @@ public class RideRequest {
 
     public void setDestinationLongitude(Double destinationLongitude) {
         this.destinationLongitude = destinationLongitude;
+    }
+
+    public Double getDistanceKm() {
+        return distanceKm;
+    }
+
+    public void setDistanceKm(Double distanceKm) {
+        this.distanceKm = distanceKm;
     }
 }
