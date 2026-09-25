@@ -22,6 +22,8 @@ public class RideResponse {
     private Double destinationLatitude;
     private Double destinationLongitude;
 
+    private Double distanceKm;
+
     private RideStatus status;
     private LocalDateTime createdAt;
 
@@ -95,6 +97,14 @@ public class RideResponse {
 
     public void setDestinationLongitude(Double destinationLongitude) {
         this.destinationLongitude = destinationLongitude;
+    }
+
+    public Double getDistanceKm() {
+        return distanceKm;
+    }
+
+    public void setDistanceKm(Double distanceKm) {
+        this.distanceKm = distanceKm;
     }
 
     public RideStatus getStatus() {
