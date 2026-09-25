@@ -18,6 +18,48 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     /**
+     * Handles cases where no driver is currently available.
+     */
+    @ExceptionHandler(NoAvailableDriverException.class)
+    public ResponseEntity<ApiErrorResponse> handleNoAvailableDriverException(
+            NoAvailableDriverException exception,
+            HttpServletRequest request) {
+
+        ApiErrorResponse errorResponse = new ApiErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(errorResponse);
+    }
+
+    /**
+     * Handles cases where Driver Service cannot be reached.
+     */
+    @ExceptionHandler(DriverServiceUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> handleDriverServiceUnavailableException(
+            DriverServiceUnavailableException exception,
+            HttpServletRequest request) {
+
+        ApiErrorResponse errorResponse = new ApiErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(errorResponse);
+    }
+
+    /**
      * Handles cases where a requested ride cannot be found.
      */
     @ExceptionHandler(IllegalArgumentException.class)
