@@ -1,6 +1,7 @@
 package lk.sliit.it3130.ride_service.controller;
 
 import jakarta.validation.Valid;
+import lk.sliit.it3130.ride_service.dto.RideCompletionRequest;
 import lk.sliit.it3130.ride_service.dto.RideRequest;
 import lk.sliit.it3130.ride_service.dto.RideResponse;
 import lk.sliit.it3130.ride_service.service.RideService;
@@ -69,15 +70,17 @@ public class RideController {
     }
 
     /**
-     * Completes a ride that is in progress.
+     * Completes an in-progress ride and creates a payment.
      *
      * PATCH /api/rides/{id}/complete
      */
     @PatchMapping("/{id}/complete")
     public ResponseEntity<RideResponse> completeRide(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @Valid @RequestBody RideCompletionRequest request) {
 
-        RideResponse response = rideService.completeRide(id);
+        RideResponse response =
+                rideService.completeRide(id, request);
 
         return ResponseEntity.ok(response);
     }
