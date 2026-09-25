@@ -30,6 +30,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/h2-console/**").permitAll()
                 // New driver registration — no token exists yet at this point
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/drivers").permitAll()
                 // Internal call from Ride Service to find available drivers
                 .requestMatchers("/api/drivers/available").permitAll()
