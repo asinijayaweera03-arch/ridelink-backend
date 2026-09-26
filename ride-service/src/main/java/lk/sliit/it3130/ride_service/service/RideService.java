@@ -25,9 +25,6 @@ public class RideService {
     private final DriverServiceClient driverServiceClient;
     private final PaymentServiceClient paymentServiceClient;
 
-    /**
-     * Constructor injection for required dependencies.
-     */
     public RideService(
             RideRepository rideRepository,
             DriverServiceClient driverServiceClient,
@@ -39,17 +36,13 @@ public class RideService {
     }
 
     /**
-     * Creates and saves a new ride request.
-     *
-     * @param request ride information received from the client
-     * @return details of the newly created ride
+     * Creates a new ride and assigns the first available driver.
      */
     public RideResponse createRide(RideRequest request) {
 
         Ride ride = new Ride();
 
         ride.setRiderId(request.getRiderId());
-
         ride.setPickupLocation(request.getPickupLocation());
         ride.setDestination(request.getDestination());
 
@@ -59,38 +52,36 @@ public class RideService {
         ride.setDestinationLatitude(request.getDestinationLatitude());
         ride.setDestinationLongitude(request.getDestinationLongitude());
 
-        // Store the estimated/requested ride distance
         ride.setDistanceKm(request.getDistanceKm());
 
-        // Get currently available drivers from Driver Service
         List<AvailableDriverResponse> availableDrivers =
                 driverServiceClient.getAvailableDrivers();
 
-        // Stop the request if no driver is currently available
         if (availableDrivers.isEmpty()) {
             throw new NoAvailableDriverException(
                     "No available driver found"
             );
         }
 
-        // Assign the first available driver
         AvailableDriverResponse selectedDriver =
                 availableDrivers.get(0);
 
         ride.setDriverId(selectedDriver.getId());
-        ride.setStatus(RideStatus.ASSIGNED);
 
-        // Save only after a driver has been assigned
+        /*
+         * @PrePersist has not executed yet for a new entity.
+         * Initialize REQUESTED before using the lifecycle state machine.
+         */
+        ride.setStatus(RideStatus.REQUESTED);
+        ride.transitionTo(RideStatus.ASSIGNED);
+
         Ride savedRide = rideRepository.save(ride);
 
         return mapToResponse(savedRide);
     }
 
     /**
-     * Returns a ride by its ID.
-     *
-     * @param rideId ride identifier
-     * @return ride details
+     * Returns a single ride by ID.
      */
     public RideResponse getRideById(Long rideId) {
 
@@ -100,21 +91,33 @@ public class RideService {
     }
 
     /**
-     * Accepts an assigned ride.
-     *
+     * Returns rides using optional passenger, driver,
+     * and lifecycle-status filters.
+     */
+    public List<RideResponse> getRides(
+            Long passengerId,
+            Long driverId,
+            RideStatus status) {
+
+        return rideRepository
+                .findByFilters(
+                        passengerId,
+                        driverId,
+                        status
+                )
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    /**
      * ASSIGNED -> ACCEPTED
      */
     public RideResponse acceptRide(Long rideId) {
 
         Ride ride = findRideById(rideId);
 
-        if (ride.getStatus() != RideStatus.ASSIGNED) {
-            throw new IllegalStateException(
-                    "Only an ASSIGNED ride can be accepted"
-            );
-        }
-
-        ride.setStatus(RideStatus.ACCEPTED);
+        ride.transitionTo(RideStatus.ACCEPTED);
 
         Ride savedRide = rideRepository.save(ride);
 
@@ -122,21 +125,13 @@ public class RideService {
     }
 
     /**
-     * Starts an accepted ride.
-     *
      * ACCEPTED -> IN_PROGRESS
      */
     public RideResponse startRide(Long rideId) {
 
         Ride ride = findRideById(rideId);
 
-        if (ride.getStatus() != RideStatus.ACCEPTED) {
-            throw new IllegalStateException(
-                    "Only an ACCEPTED ride can be started"
-            );
-        }
-
-        ride.setStatus(RideStatus.IN_PROGRESS);
+        ride.transitionTo(RideStatus.IN_PROGRESS);
 
         Ride savedRide = rideRepository.save(ride);
 
@@ -144,9 +139,9 @@ public class RideService {
     }
 
     /**
-     * Completes a ride and creates a payment.
+     * Completes an IN_PROGRESS ride.
      *
-     * IN_PROGRESS -> COMPLETED
+     * Payment failure handling will be improved in Session 8.
      */
     public RideResponse completeRide(
             Long rideId,
@@ -154,16 +149,15 @@ public class RideService {
 
         Ride ride = findRideById(rideId);
 
-        if (ride.getStatus() != RideStatus.IN_PROGRESS) {
-            throw new IllegalStateException(
-                    "Only an IN_PROGRESS ride can be completed"
-            );
+        /*
+         * Validate lifecycle before contacting Payment Service.
+         */
+        if (!ride.getStatus()
+                .canTransitionTo(RideStatus.COMPLETED)) {
+
+            ride.transitionTo(RideStatus.COMPLETED);
         }
 
-        /*
-         * Send completed ride information to Payment Service.
-         * riderId in Ride Service maps to passengerId in Payment Service.
-         */
         PaymentRequest paymentRequest = new PaymentRequest(
                 ride.getId(),
                 ride.getRiderId(),
@@ -175,8 +169,7 @@ public class RideService {
 
         paymentServiceClient.createPayment(paymentRequest);
 
-        // Mark the ride as completed after payment creation succeeds
-        ride.setStatus(RideStatus.COMPLETED);
+        ride.transitionTo(RideStatus.COMPLETED);
 
         Ride savedRide = rideRepository.save(ride);
 
@@ -184,26 +177,28 @@ public class RideService {
     }
 
     /**
-     * Cancels a ride.
+     * REQUESTED / ASSIGNED / ACCEPTED -> CANCELLED.
      *
-     * REQUESTED / ASSIGNED / ACCEPTED -> CANCELLED
+     * The cancellation reason is optional.
+     * IN_PROGRESS rides cannot be cancelled.
      */
-    public RideResponse cancelRide(Long rideId) {
+    public RideResponse cancelRide(
+            Long rideId,
+            String reason) {
 
         Ride ride = findRideById(rideId);
 
-        RideStatus currentStatus = ride.getStatus();
-
-        if (currentStatus != RideStatus.REQUESTED
-                && currentStatus != RideStatus.ASSIGNED
-                && currentStatus != RideStatus.ACCEPTED) {
-
-            throw new IllegalStateException(
-                    "Ride cannot be cancelled in its current status"
+        /*
+         * Store the optional reason only when meaningful text
+         * has been supplied.
+         */
+        if (reason != null && !reason.isBlank()) {
+            ride.setCancellationReason(
+                    reason.trim()
             );
         }
 
-        ride.setStatus(RideStatus.CANCELLED);
+        ride.transitionTo(RideStatus.CANCELLED);
 
         Ride savedRide = rideRepository.save(ride);
 
@@ -217,7 +212,9 @@ public class RideService {
 
         return rideRepository.findById(rideId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Ride not found"));
+                        new IllegalArgumentException(
+                                "Ride not found"
+                        ));
     }
 
     /**
@@ -231,11 +228,21 @@ public class RideService {
         response.setRiderId(ride.getRiderId());
         response.setDriverId(ride.getDriverId());
 
-        response.setPickupLocation(ride.getPickupLocation());
-        response.setDestination(ride.getDestination());
+        response.setPickupLocation(
+                ride.getPickupLocation()
+        );
 
-        response.setPickupLatitude(ride.getPickupLatitude());
-        response.setPickupLongitude(ride.getPickupLongitude());
+        response.setDestination(
+                ride.getDestination()
+        );
+
+        response.setPickupLatitude(
+                ride.getPickupLatitude()
+        );
+
+        response.setPickupLongitude(
+                ride.getPickupLongitude()
+        );
 
         response.setDestinationLatitude(
                 ride.getDestinationLatitude()
@@ -245,10 +252,21 @@ public class RideService {
                 ride.getDestinationLongitude()
         );
 
-        response.setDistanceKm(ride.getDistanceKm());
+        response.setDistanceKm(
+                ride.getDistanceKm()
+        );
 
-        response.setStatus(ride.getStatus());
-        response.setCreatedAt(ride.getCreatedAt());
+        response.setStatus(
+                ride.getStatus()
+        );
+
+        response.setCancellationReason(
+                ride.getCancellationReason()
+        );
+
+        response.setCreatedAt(
+                ride.getCreatedAt()
+        );
 
         return response;
     }

@@ -25,6 +25,10 @@ public class RideResponse {
     private Double distanceKm;
 
     private RideStatus status;
+
+    // Optional reason when the ride has been cancelled
+    private String cancellationReason;
+
     private LocalDateTime createdAt;
 
     public Long getId() {
@@ -113,6 +117,14 @@ public class RideResponse {
 
     public void setStatus(RideStatus status) {
         this.status = status;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
     }
 
     public LocalDateTime getCreatedAt() {

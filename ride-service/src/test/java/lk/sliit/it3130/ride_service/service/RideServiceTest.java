@@ -7,6 +7,7 @@ import lk.sliit.it3130.ride_service.dto.RideCompletionRequest;
 import lk.sliit.it3130.ride_service.dto.RideRequest;
 import lk.sliit.it3130.ride_service.dto.RideResponse;
 import lk.sliit.it3130.ride_service.exception.DriverServiceUnavailableException;
+import lk.sliit.it3130.ride_service.exception.InvalidRideTransitionException;
 import lk.sliit.it3130.ride_service.exception.NoAvailableDriverException;
 import lk.sliit.it3130.ride_service.model.Ride;
 import lk.sliit.it3130.ride_service.model.RideStatus;
@@ -40,6 +41,7 @@ class RideServiceTest {
 
     @BeforeEach
     void setUp() {
+
         rideService = new RideService(
                 rideRepository,
                 driverServiceClient,
@@ -52,22 +54,36 @@ class RideServiceTest {
 
         RideRequest request = createRideRequest();
 
-        AvailableDriverResponse driver = new AvailableDriverResponse();
+        AvailableDriverResponse driver =
+                new AvailableDriverResponse();
+
         driver.setId(10L);
 
         when(driverServiceClient.getAvailableDrivers())
                 .thenReturn(List.of(driver));
 
         when(rideRepository.save(any(Ride.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation ->
+                        invocation.getArgument(0));
 
-        RideResponse response = rideService.createRide(request);
+        RideResponse response =
+                rideService.createRide(request);
 
-        assertEquals(10L, response.getDriverId());
-        assertEquals(RideStatus.ASSIGNED, response.getStatus());
+        assertEquals(
+                10L,
+                response.getDriverId()
+        );
 
-        verify(driverServiceClient).getAvailableDrivers();
-        verify(rideRepository).save(any(Ride.class));
+        assertEquals(
+                RideStatus.ASSIGNED,
+                response.getStatus()
+        );
+
+        verify(driverServiceClient)
+                .getAvailableDrivers();
+
+        verify(rideRepository)
+                .save(any(Ride.class));
     }
 
     @Test
@@ -89,10 +105,13 @@ class RideServiceTest {
                 exception.getMessage()
         );
 
-        verify(driverServiceClient).getAvailableDrivers();
+        verify(driverServiceClient)
+                .getAvailableDrivers();
 
-        verify(rideRepository, never())
-                .save(any(Ride.class));
+        verify(
+                rideRepository,
+                never()
+        ).save(any(Ride.class));
     }
 
     @Test
@@ -118,54 +137,82 @@ class RideServiceTest {
                 exception.getMessage()
         );
 
-        verify(driverServiceClient).getAvailableDrivers();
+        verify(driverServiceClient)
+                .getAvailableDrivers();
 
-        verify(rideRepository, never())
-                .save(any(Ride.class));
+        verify(
+                rideRepository,
+                never()
+        ).save(any(Ride.class));
     }
 
     @Test
     void acceptRideShouldChangeAssignedRideToAccepted() {
 
-        Ride ride = createRide(RideStatus.ASSIGNED);
+        Ride ride =
+                createRide(RideStatus.ASSIGNED);
 
         when(rideRepository.findById(1L))
                 .thenReturn(Optional.of(ride));
 
         when(rideRepository.save(any(Ride.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation ->
+                        invocation.getArgument(0));
 
-        RideResponse response = rideService.acceptRide(1L);
+        RideResponse response =
+                rideService.acceptRide(1L);
 
-        assertEquals(RideStatus.ACCEPTED, response.getStatus());
+        assertEquals(
+                RideStatus.ACCEPTED,
+                response.getStatus()
+        );
 
-        verify(rideRepository).save(ride);
+        assertNotNull(
+                ride.getAcceptedAt()
+        );
+
+        verify(rideRepository)
+                .save(ride);
     }
 
     @Test
     void startRideShouldChangeAcceptedRideToInProgress() {
 
-        Ride ride = createRide(RideStatus.ACCEPTED);
+        Ride ride =
+                createRide(RideStatus.ACCEPTED);
 
         when(rideRepository.findById(1L))
                 .thenReturn(Optional.of(ride));
 
         when(rideRepository.save(any(Ride.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation ->
+                        invocation.getArgument(0));
 
-        RideResponse response = rideService.startRide(1L);
+        RideResponse response =
+                rideService.startRide(1L);
 
-        assertEquals(RideStatus.IN_PROGRESS, response.getStatus());
+        assertEquals(
+                RideStatus.IN_PROGRESS,
+                response.getStatus()
+        );
 
-        verify(rideRepository).save(ride);
+        assertNotNull(
+                ride.getStartedAt()
+        );
+
+        verify(rideRepository)
+                .save(ride);
     }
 
     @Test
     void completeRideShouldCreatePaymentAndMarkRideCompleted() {
 
-        Ride ride = createRide(RideStatus.IN_PROGRESS);
+        Ride ride =
+                createRide(RideStatus.IN_PROGRESS);
 
-        RideCompletionRequest request = new RideCompletionRequest();
+        RideCompletionRequest request =
+                new RideCompletionRequest();
+
         request.setDistanceKm(12.5);
         request.setDurationMin(30);
         request.setPeakHour(false);
@@ -175,58 +222,194 @@ class RideServiceTest {
                 .thenReturn(Optional.of(ride));
 
         when(rideRepository.save(any(Ride.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation ->
+                        invocation.getArgument(0));
 
         RideResponse response =
-                rideService.completeRide(1L, request);
+                rideService.completeRide(
+                        1L,
+                        request
+                );
 
-        assertEquals(RideStatus.COMPLETED, response.getStatus());
+        assertEquals(
+                RideStatus.COMPLETED,
+                response.getStatus()
+        );
 
-        verify(paymentServiceClient, times(1))
-                .createPayment(any());
+        assertNotNull(
+                ride.getCompletedAt()
+        );
 
-        verify(rideRepository).save(ride);
+        verify(
+                paymentServiceClient,
+                times(1)
+        ).createPayment(any());
+
+        verify(rideRepository)
+                .save(ride);
     }
 
     @Test
     void cancelRideShouldChangeAssignedRideToCancelled() {
 
-        Ride ride = createRide(RideStatus.ASSIGNED);
+        Ride ride =
+                createRide(RideStatus.ASSIGNED);
 
         when(rideRepository.findById(1L))
                 .thenReturn(Optional.of(ride));
 
         when(rideRepository.save(any(Ride.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation ->
+                        invocation.getArgument(0));
 
-        RideResponse response = rideService.cancelRide(1L);
+        RideResponse response =
+                rideService.cancelRide(
+                        1L,
+                        "Passenger changed travel plans"
+                );
 
-        assertEquals(RideStatus.CANCELLED, response.getStatus());
+        assertEquals(
+                RideStatus.CANCELLED,
+                response.getStatus()
+        );
 
-        verify(rideRepository).save(ride);
+        assertNotNull(
+                ride.getCancelledAt()
+        );
+
+        assertEquals(
+                "Passenger changed travel plans",
+                ride.getCancellationReason()
+        );
+
+        assertEquals(
+                "Passenger changed travel plans",
+                response.getCancellationReason()
+        );
+
+        verify(rideRepository)
+                .save(ride);
+    }
+
+    @Test
+    void cancelRideShouldAllowMissingReason() {
+
+        Ride ride =
+                createRide(RideStatus.ASSIGNED);
+
+        when(rideRepository.findById(1L))
+                .thenReturn(Optional.of(ride));
+
+        when(rideRepository.save(any(Ride.class)))
+                .thenAnswer(invocation ->
+                        invocation.getArgument(0));
+
+        RideResponse response =
+                rideService.cancelRide(
+                        1L,
+                        null
+                );
+
+        assertEquals(
+                RideStatus.CANCELLED,
+                response.getStatus()
+        );
+
+        assertNull(
+                ride.getCancellationReason()
+        );
+
+        assertNull(
+                response.getCancellationReason()
+        );
+
+        assertNotNull(
+                ride.getCancelledAt()
+        );
+
+        verify(rideRepository)
+                .save(ride);
     }
 
     @Test
     void acceptRideShouldFailWhenRideIsNotAssigned() {
 
-        Ride ride = createRide(RideStatus.REQUESTED);
+        Ride ride =
+                createRide(RideStatus.REQUESTED);
 
         when(rideRepository.findById(1L))
                 .thenReturn(Optional.of(ride));
 
-        IllegalStateException exception =
+        InvalidRideTransitionException exception =
                 assertThrows(
-                        IllegalStateException.class,
+                        InvalidRideTransitionException.class,
                         () -> rideService.acceptRide(1L)
                 );
 
         assertEquals(
-                "Only an ASSIGNED ride can be accepted",
-                exception.getMessage()
+                RideStatus.REQUESTED,
+                exception.getCurrentStatus()
         );
 
-        verify(rideRepository, never())
-                .save(any(Ride.class));
+        assertEquals(
+                RideStatus.REQUESTED.allowedNextStates(),
+                exception.getAllowedNextStates()
+        );
+
+        verify(
+                rideRepository,
+                never()
+        ).save(any(Ride.class));
+    }
+
+    @Test
+    void cancelRideShouldFailWhenRideIsInProgress() {
+
+        Ride ride =
+                createRide(RideStatus.IN_PROGRESS);
+
+        when(rideRepository.findById(1L))
+                .thenReturn(Optional.of(ride));
+
+        InvalidRideTransitionException exception =
+                assertThrows(
+                        InvalidRideTransitionException.class,
+                        () -> rideService.cancelRide(
+                                1L,
+                                "Passenger requested cancellation"
+                        )
+                );
+
+        assertEquals(
+                RideStatus.IN_PROGRESS,
+                exception.getCurrentStatus()
+        );
+
+        assertEquals(
+                RideStatus.IN_PROGRESS.allowedNextStates(),
+                exception.getAllowedNextStates()
+        );
+
+        assertTrue(
+                exception
+                        .getAllowedNextStates()
+                        .contains(
+                                RideStatus.COMPLETED
+                        )
+        );
+
+        assertFalse(
+                exception
+                        .getAllowedNextStates()
+                        .contains(
+                                RideStatus.CANCELLED
+                        )
+        );
+
+        verify(
+                rideRepository,
+                never()
+        ).save(any(Ride.class));
     }
 
     @Test
@@ -246,38 +429,49 @@ class RideServiceTest {
                 exception.getMessage()
         );
 
-        verify(rideRepository, never())
-                .save(any(Ride.class));
+        verify(
+                rideRepository,
+                never()
+        ).save(any(Ride.class));
     }
 
     private RideRequest createRideRequest() {
 
-        RideRequest request = new RideRequest();
+        RideRequest request =
+                new RideRequest();
 
         request.setRiderId(100L);
         request.setPickupLocation("Colombo");
         request.setDestination("Kandy");
+
         request.setPickupLatitude(6.9271);
         request.setPickupLongitude(79.8612);
+
         request.setDestinationLatitude(7.2906);
         request.setDestinationLongitude(80.6337);
+
         request.setDistanceKm(115.0);
 
         return request;
     }
 
-    private Ride createRide(RideStatus status) {
+    private Ride createRide(
+            RideStatus status) {
 
         Ride ride = new Ride();
 
         ride.setRiderId(100L);
         ride.setDriverId(10L);
+
         ride.setPickupLocation("Colombo");
         ride.setDestination("Kandy");
+
         ride.setPickupLatitude(6.9271);
         ride.setPickupLongitude(79.8612);
+
         ride.setDestinationLatitude(7.2906);
         ride.setDestinationLongitude(80.6337);
+
         ride.setDistanceKm(115.0);
         ride.setStatus(status);
 

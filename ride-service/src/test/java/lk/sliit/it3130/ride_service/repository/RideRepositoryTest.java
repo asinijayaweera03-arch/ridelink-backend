@@ -173,4 +173,51 @@ class RideRepositoryTest {
                                         == RideStatus.REQUESTED)
         );
     }
+
+    /**
+     * Verifies that passenger, driver and status filters
+     * can be used together.
+     */
+    @Test
+    void shouldFindRidesUsingCombinedFilters() {
+
+        Ride matchingRide = createRide(
+                5001L,
+                9501L,
+                RideStatus.ASSIGNED
+        );
+
+        Ride nonMatchingRide = createRide(
+                5002L,
+                9502L,
+                RideStatus.ACCEPTED
+        );
+
+        rideRepository.save(matchingRide);
+        rideRepository.save(nonMatchingRide);
+
+        List<Ride> rides =
+                rideRepository.findByFilters(
+                        5001L,
+                        9501L,
+                        RideStatus.ASSIGNED
+                );
+
+        assertFalse(rides.isEmpty());
+
+        assertTrue(
+                rides.stream()
+                        .anyMatch(r ->
+                                r.getRiderId().equals(5001L)
+                                        && r.getDriverId().equals(9501L)
+                                        && r.getStatus()
+                                        == RideStatus.ASSIGNED)
+        );
+
+        assertFalse(
+                rides.stream()
+                        .anyMatch(r ->
+                                r.getRiderId().equals(5002L))
+        );
+    }
 }
