@@ -1,5 +1,7 @@
 package lk.sliit.it3130.ride_service.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lk.sliit.it3130.ride_service.dto.PaymentRetryRequest;
 import lk.sliit.it3130.ride_service.dto.RideCancellationRequest;
@@ -20,26 +22,28 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/rides")
+@Tag(
+        name = "Ride Management",
+        description = "Ride request, assignment, lifecycle, cancellation and payment operations"
+)
 public class RideController {
 
     private final RideService rideService;
 
-    /**
-     * Constructor injection for RideService.
-     */
     public RideController(RideService rideService) {
         this.rideService = rideService;
     }
 
     /**
      * Creates a new ride request.
-     *
      * Only passengers can request rides.
-     *
-     * POST /api/rides
      */
     @PostMapping
     @PreAuthorize("hasRole('PASSENGER')")
+    @Operation(
+            summary = "Request a ride",
+            description = "Creates a new ride request for a passenger and attempts to assign an available driver. Requires PASSENGER role."
+    )
     public ResponseEntity<RideResponse> createRide(
             @Valid @RequestBody RideRequest request) {
 
@@ -53,10 +57,12 @@ public class RideController {
 
     /**
      * Returns rides using optional filters.
-     *
-     * Any authenticated user can access this endpoint.
      */
     @GetMapping
+    @Operation(
+            summary = "Retrieve rides",
+            description = "Returns rides and optionally filters them by passenger ID, driver ID or ride status. Requires authentication."
+    )
     public ResponseEntity<List<RideResponse>> getRides(
             @RequestParam(
                     name = "passengerId",
@@ -85,10 +91,12 @@ public class RideController {
 
     /**
      * Returns a ride by ID.
-     *
-     * Any authenticated user can access this endpoint.
      */
     @GetMapping("/{id}")
+    @Operation(
+            summary = "Retrieve a ride by ID",
+            description = "Returns the ride matching the supplied ride ID. Requires authentication."
+    )
     public ResponseEntity<RideResponse> getRideById(
             @PathVariable Long id) {
 
@@ -100,11 +108,14 @@ public class RideController {
 
     /**
      * Accepts an assigned ride.
-     *
      * Only drivers can accept rides.
      */
     @PatchMapping("/{id}/accept")
     @PreAuthorize("hasRole('DRIVER')")
+    @Operation(
+            summary = "Accept an assigned ride",
+            description = "Transitions an ASSIGNED ride to ACCEPTED. Requires DRIVER role."
+    )
     public ResponseEntity<RideResponse> acceptRide(
             @PathVariable Long id) {
 
@@ -116,11 +127,14 @@ public class RideController {
 
     /**
      * Starts an accepted ride.
-     *
      * Only drivers can start rides.
      */
     @PatchMapping("/{id}/start")
     @PreAuthorize("hasRole('DRIVER')")
+    @Operation(
+            summary = "Start an accepted ride",
+            description = "Transitions an ACCEPTED ride to IN_PROGRESS. Requires DRIVER role."
+    )
     public ResponseEntity<RideResponse> startRide(
             @PathVariable Long id) {
 
@@ -133,13 +147,13 @@ public class RideController {
     /**
      * Completes an in-progress ride and attempts
      * to record its payment.
-     *
-     * Only drivers can complete rides.
-     *
-     * PATCH /api/rides/{id}/complete
      */
     @PatchMapping("/{id}/complete")
     @PreAuthorize("hasRole('DRIVER')")
+    @Operation(
+            summary = "Complete a ride",
+            description = "Transitions an IN_PROGRESS ride to COMPLETED and attempts to record the simulated payment using the Fare & Payment Service. Requires DRIVER role."
+    )
     public ResponseEntity<RideResponse> completeRide(
             @PathVariable Long id,
             @Valid @RequestBody
@@ -156,13 +170,13 @@ public class RideController {
 
     /**
      * Retries payment processing for a completed ride.
-     *
-     * Only drivers can retry payment processing.
-     *
-     * PATCH /api/rides/{id}/payment/retry
      */
     @PatchMapping("/{id}/payment/retry")
     @PreAuthorize("hasRole('DRIVER')")
+    @Operation(
+            summary = "Retry ride payment",
+            description = "Retries payment processing for a completed ride when payment is pending or previously failed. Requires DRIVER role."
+    )
     public ResponseEntity<RideResponse> retryPayment(
             @PathVariable Long id,
             @Valid @RequestBody
@@ -180,12 +194,14 @@ public class RideController {
 
     /**
      * Cancels a ride.
-     *
      * Only passengers can cancel rides.
-     * Cancellation reason is optional.
      */
     @PatchMapping("/{id}/cancel")
     @PreAuthorize("hasRole('PASSENGER')")
+    @Operation(
+            summary = "Cancel a ride",
+            description = "Cancels a ride when cancellation is valid for its current lifecycle state. An optional cancellation reason may be supplied. Requires PASSENGER role."
+    )
     public ResponseEntity<RideResponse> cancelRide(
             @PathVariable Long id,
             @Valid @RequestBody(required = false)
