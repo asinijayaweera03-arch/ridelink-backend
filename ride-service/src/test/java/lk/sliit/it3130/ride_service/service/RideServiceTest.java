@@ -11,6 +11,7 @@ import lk.sliit.it3130.ride_service.exception.DriverServiceUnavailableException;
 import lk.sliit.it3130.ride_service.exception.InvalidRideTransitionException;
 import lk.sliit.it3130.ride_service.exception.NoAvailableDriverException;
 import lk.sliit.it3130.ride_service.exception.PaymentServiceUnavailableException;
+import lk.sliit.it3130.ride_service.exception.RideNotFoundException;
 import lk.sliit.it3130.ride_service.model.PaymentRecordStatus;
 import lk.sliit.it3130.ride_service.model.Ride;
 import lk.sliit.it3130.ride_service.model.RideStatus;
@@ -375,6 +376,7 @@ class RideServiceTest {
     void retryPendingPaymentShouldCreateNewPayment() {
 
         Ride ride = createCompletedRide();
+
         ride.setPaymentStatus(
                 PaymentRecordStatus.PENDING
         );
@@ -673,19 +675,19 @@ class RideServiceTest {
     }
 
     @Test
-    void rideNotFoundShouldThrowIllegalArgumentException() {
+    void rideNotFoundShouldThrowRideNotFoundException() {
 
         when(rideRepository.findById(99L))
                 .thenReturn(Optional.empty());
 
-        IllegalArgumentException exception =
+        RideNotFoundException exception =
                 assertThrows(
-                        IllegalArgumentException.class,
+                        RideNotFoundException.class,
                         () -> rideService.startRide(99L)
                 );
 
         assertEquals(
-                "Ride not found",
+                "Ride not found: 99",
                 exception.getMessage()
         );
 

@@ -10,6 +10,7 @@ import lk.sliit.it3130.ride_service.dto.RideRequest;
 import lk.sliit.it3130.ride_service.dto.RideResponse;
 import lk.sliit.it3130.ride_service.exception.NoAvailableDriverException;
 import lk.sliit.it3130.ride_service.exception.PaymentServiceUnavailableException;
+import lk.sliit.it3130.ride_service.exception.RideNotFoundException;
 import lk.sliit.it3130.ride_service.model.PaymentRecordStatus;
 import lk.sliit.it3130.ride_service.model.Ride;
 import lk.sliit.it3130.ride_service.model.RideStatus;
@@ -418,9 +419,10 @@ public class RideService {
 
         return rideRepository.findById(rideId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Ride not found"
-                        ));
+                        new RideNotFoundException(
+                                "Ride not found: " + rideId
+                        )
+                );
     }
 
     /**

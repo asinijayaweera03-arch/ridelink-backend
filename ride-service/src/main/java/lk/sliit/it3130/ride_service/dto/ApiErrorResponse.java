@@ -1,57 +1,39 @@
 package lk.sliit.it3130.ride_service.dto;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * Standard error response returned by the Ride Service API.
  */
 public class ApiErrorResponse {
 
-    private LocalDateTime timestamp;
-    private int status;
-    private String error;
+    private String code;
     private String message;
-    private String path;
+    private LocalDateTime timestamp;
+    private Map<String, Object> details;
 
     public ApiErrorResponse() {
     }
 
     public ApiErrorResponse(
-            LocalDateTime timestamp,
-            int status,
-            String error,
+            String code,
             String message,
-            String path) {
+            LocalDateTime timestamp,
+            Map<String, Object> details) {
 
-        this.timestamp = timestamp;
-        this.status = status;
-        this.error = error;
+        this.code = code;
         this.message = message;
-        this.path = path;
-    }
-
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
+        this.details = details;
     }
 
-    public int getStatus() {
-        return status;
+    public String getCode() {
+        return code;
     }
 
-    public void setStatus(int status) {
-        this.status = status;
-    }
-
-    public String getError() {
-        return error;
-    }
-
-    public void setError(String error) {
-        this.error = error;
+    public void setCode(String code) {
+        this.code = code;
     }
 
     public String getMessage() {
@@ -62,11 +44,20 @@ public class ApiErrorResponse {
         this.message = message;
     }
 
-    public String getPath() {
-        return path;
+    public LocalDateTime getTimestamp() {
+        return timestamp;
     }
 
-    public void setPath(String path) {
-        this.path = path;
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public Map<String, Object> getDetails() {
+        return details;
+    }
+
+    public void setDetails(
+            Map<String, Object> details) {
+        this.details = details;
     }
 }

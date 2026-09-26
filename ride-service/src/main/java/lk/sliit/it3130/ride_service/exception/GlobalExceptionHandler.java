@@ -1,6 +1,5 @@
 package lk.sliit.it3130.ride_service.exception;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lk.sliit.it3130.ride_service.dto.ApiErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,7 +8,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
-import java.util.stream.Collectors;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Handles exceptions globally for the Ride Service API.
@@ -18,24 +18,61 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     /**
+     * Handles cases where a requested ride does not exist.
+     */
+    @ExceptionHandler(RideNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleRideNotFoundException(
+            RideNotFoundException exception) {
+
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                "RIDE_NOT_FOUND",
+                exception.getMessage(),
+                Map.of()
+        );
+    }
+
+    /**
+     * Handles invalid ride lifecycle transitions.
+     */
+    @ExceptionHandler(InvalidRideTransitionException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidRideTransitionException(
+            InvalidRideTransitionException exception) {
+
+        Map<String, Object> details =
+                new LinkedHashMap<>();
+
+        details.put(
+                "currentStatus",
+                exception.getCurrentStatus()
+        );
+
+        details.put(
+                "allowedNextStates",
+                exception.getAllowedNextStates()
+        );
+
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                "INVALID_RIDE_TRANSITION",
+                "Invalid ride transition",
+                details
+        );
+    }
+
+    /**
      * Handles cases where no driver is currently available.
      */
     @ExceptionHandler(NoAvailableDriverException.class)
     public ResponseEntity<ApiErrorResponse> handleNoAvailableDriverException(
-            NoAvailableDriverException exception,
-            HttpServletRequest request) {
+            NoAvailableDriverException exception) {
 
-        ApiErrorResponse errorResponse = new ApiErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.CONFLICT.value(),
-                HttpStatus.CONFLICT.getReasonPhrase(),
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                "NO_AVAILABLE_DRIVER",
                 exception.getMessage(),
-                request.getRequestURI()
+                Map.of()
         );
-
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(errorResponse);
     }
 
     /**
@@ -43,122 +80,92 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(DriverServiceUnavailableException.class)
     public ResponseEntity<ApiErrorResponse> handleDriverServiceUnavailableException(
-            DriverServiceUnavailableException exception,
-            HttpServletRequest request) {
+            DriverServiceUnavailableException exception) {
 
-        ApiErrorResponse errorResponse = new ApiErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.SERVICE_UNAVAILABLE.value(),
-                HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(),
+        return buildResponse(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "DRIVER_SERVICE_UNAVAILABLE",
                 exception.getMessage(),
-                request.getRequestURI()
+                Map.of()
         );
-
-        return ResponseEntity
-                .status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(errorResponse);
     }
 
     /**
-     * Handles invalid ride lifecycle transitions.
-     *
-     * Example:
-     * IN_PROGRESS -> CANCELLED is invalid because
-     * IN_PROGRESS can only transition to COMPLETED.
+     * Handles cases where Payment Service cannot be reached.
      */
-    @ExceptionHandler(InvalidRideTransitionException.class)
-    public ResponseEntity<ApiErrorResponse> handleInvalidRideTransitionException(
-            InvalidRideTransitionException exception,
-            HttpServletRequest request) {
+    @ExceptionHandler(PaymentServiceUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> handlePaymentServiceUnavailableException(
+            PaymentServiceUnavailableException exception) {
 
-        String message =
-                "Invalid ride transition. Current status: "
-                        + exception.getCurrentStatus()
-                        + ". Allowed next states: "
-                        + exception.getAllowedNextStates();
-
-        ApiErrorResponse errorResponse = new ApiErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.CONFLICT.value(),
-                HttpStatus.CONFLICT.getReasonPhrase(),
-                message,
-                request.getRequestURI()
-        );
-
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(errorResponse);
-    }
-
-    /**
-     * Handles cases where a requested ride cannot be found.
-     */
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiErrorResponse> handleIllegalArgumentException(
-            IllegalArgumentException exception,
-            HttpServletRequest request) {
-
-        ApiErrorResponse errorResponse = new ApiErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(),
+        return buildResponse(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "PAYMENT_SERVICE_UNAVAILABLE",
                 exception.getMessage(),
-                request.getRequestURI()
+                Map.of()
         );
-
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(errorResponse);
     }
 
     /**
-     * Handles other illegal ride states.
+     * Handles invalid business-state operations.
      */
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ApiErrorResponse> handleIllegalStateException(
-            IllegalStateException exception,
-            HttpServletRequest request) {
+            IllegalStateException exception) {
 
-        ApiErrorResponse errorResponse = new ApiErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "INVALID_RIDE_STATE",
                 exception.getMessage(),
-                request.getRequestURI()
+                Map.of()
         );
-
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(errorResponse);
     }
 
     /**
-     * Handles validation errors from request DTOs.
+     * Handles request validation failures.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidationException(
-            MethodArgumentNotValidException exception,
-            HttpServletRequest request) {
+            MethodArgumentNotValidException exception) {
 
-        String message = exception.getBindingResult()
+        Map<String, Object> details =
+                new LinkedHashMap<>();
+
+        exception.getBindingResult()
                 .getFieldErrors()
-                .stream()
-                .map(error ->
-                        error.getField()
-                                + ": "
-                                + error.getDefaultMessage())
-                .collect(Collectors.joining(", "));
+                .forEach(error ->
+                        details.put(
+                                error.getField(),
+                                error.getDefaultMessage()
+                        )
+                );
 
-        ApiErrorResponse errorResponse = new ApiErrorResponse(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                message,
-                request.getRequestURI()
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "VALIDATION_ERROR",
+                "Request validation failed",
+                details
         );
+    }
+
+    /**
+     * Creates the common API error structure.
+     */
+    private ResponseEntity<ApiErrorResponse> buildResponse(
+            HttpStatus status,
+            String code,
+            String message,
+            Map<String, Object> details) {
+
+        ApiErrorResponse errorResponse =
+                new ApiErrorResponse(
+                        code,
+                        message,
+                        LocalDateTime.now(),
+                        details
+                );
 
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+                .status(status)
                 .body(errorResponse);
     }
 }
