@@ -1,435 +1,798 @@
-{
-	"info": {
-		"_postman_id": "0340b227-5d1f-427e-a907-545d5389f50a",
-		"name": "RideLink API",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "48894868",
-		"_collection_link": "https://go.postman.co/collection/48894868-0340b227-5d1f-427e-a907-545d5389f50a?source=collection_link"
-	},
-	"item": [
-		{
-			"name": "Account Service",
-			"item": [
-				{
-					"name": "Register",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"const response = pm.response.json();\n\npm.environment.set(\"accountId\", response.id);"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"Postman Passenger2\",\n  \"email\": \"postman.passenger2@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"PASSENGER\"\n}\n",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{accountServiceUrl}}/api/accounts/register",
-							"host": [
-								"{{accountServiceUrl}}"
-							],
-							"path": [
-								"api",
-								"accounts",
-								"register"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Login",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"const response = pm.response.json();\n\npm.environment.set(\"jwtToken\", response.token);"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"email\": \"admin@ridelink.com\",\n  \"password\": \"password123\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{accountServiceUrl}}/api/auth/login",
-							"host": [
-								"{{accountServiceUrl}}"
-							],
-							"path": [
-								"api",
-								"auth",
-								"login"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Profile",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{accountServiceUrl}}/api/accounts/{{accountId}}",
-							"host": [
-								"{{accountServiceUrl}}"
-							],
-							"path": [
-								"api",
-								"accounts",
-								"{{accountId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Profile",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "PUT",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"Updated Postman Passenger\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{accountServiceUrl}}/api/accounts/{{accountId}}",
-							"host": [
-								"{{accountServiceUrl}}"
-							],
-							"path": [
-								"api",
-								"accounts",
-								"{{accountId}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Status",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "PATCH",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"status\": \"SUSPENDED\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{accountServiceUrl}}/api/accounts/{{accountId}}/status",
-							"host": [
-								"{{accountServiceUrl}}"
-							],
-							"path": [
-								"api",
-								"accounts",
-								"{{accountId}}",
-								"status"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Role",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "PATCH",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"role\": \"DRIVER\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{accountServiceUrl}}/api/accounts/{{accountId}}/role",
-							"host": [
-								"{{accountServiceUrl}}"
-							],
-							"path": [
-								"api",
-								"accounts",
-								"{{accountId}}",
-								"role"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Ride Management Service",
-			"item": []
-		},
-		{
-			"name": "Fare & Payment Service",
-			"item": []
-		},
-		{
-			"name": "Driver Service",
-			"item": [
-				{
-					"name": "Register Driver",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"accountId\": 1,\n  \"licenseNumber\": \"LIC12345\",\n  \"name\": \"Postman Driver\",\n  \"phone\": \"0771234567\"\n}\n",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{driverServiceUrl}}/api/drivers",
-							"host": [
-								"{{driverServiceUrl}}"
-							],
-							"path": [
-								"api",
-								"drivers"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Attach Vehicle",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{jwtToken}}",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"vehicleNumber\": \"CAB-1234\",\n  \"vehicleType\": \"CAR\",\n  \"color\": \"White\",\n  \"capacity\": 4\n}\n",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{driverServiceUrl}}/api/drivers/1/vehicle",
-							"host": [
-								"{{driverServiceUrl}}"
-							],
-							"path": [
-								"api",
-								"drivers",
-								"1",
-								"vehicle"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Vehicle",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{jwtToken}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{driverServiceUrl}}/api/drivers/1/vehicle",
-							"host": [
-								"{{driverServiceUrl}}"
-							],
-							"path": [
-								"api",
-								"drivers",
-								"1",
-								"vehicle"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Availability",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{jwtToken}}",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"availabilityStatus\": \"AVAILABLE\"\n}\n",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{driverServiceUrl}}/api/drivers/1/availability",
-							"host": [
-								"{{driverServiceUrl}}"
-							],
-							"path": [
-								"api",
-								"drivers",
-								"1",
-								"availability"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Location",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{jwtToken}}",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"currentLatitude\": 7.2906,\n  \"currentLongitude\": 80.6337,\n  \"serviceArea\": \"Kandy\"\n}\n",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{driverServiceUrl}}/api/drivers/1/location",
-							"host": [
-								"{{driverServiceUrl}}"
-							],
-							"path": [
-								"api",
-								"drivers",
-								"1",
-								"location"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Available Drivers",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{driverServiceUrl}}/api/drivers/available?serviceArea=Kandy",
-							"host": [
-								"{{driverServiceUrl}}"
-							],
-							"path": [
-								"api",
-								"drivers",
-								"available"
-							],
-							"query": [
-								{
-									"key": "serviceArea",
-									"value": "Kandy"
-								}
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		}
-	]
+﻿{
+    "info":  {
+                 "_postman_id":  "0340b227-5d1f-427e-a907-545d5389f50a",
+                 "name":  "RideLink API",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+                 "_exporter_id":  "48894868",
+                 "_collection_link":  "https://go.postman.co/collection/48894868-0340b227-5d1f-427e-a907-545d5389f50a?source=collection_link"
+             },
+    "item":  [
+                 {
+                     "name":  "Account Service",
+                     "item":  [
+                                  {
+                                      "name":  "Register",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const response = pm.response.json();\n\npm.environment.set(\"accountId\", response.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"name\": \"Postman Passenger2\",\n  \"email\": \"postman.passenger2@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"PASSENGER\"\n}\n",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{accountServiceUrl}}/api/accounts/register",
+                                                                  "host":  [
+                                                                               "{{accountServiceUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "accounts",
+                                                                               "register"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Login",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const response = pm.response.json();\n\npm.environment.set(\"jwtToken\", response.token);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"admin@ridelink.com\",\n  \"password\": \"password123\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{accountServiceUrl}}/api/auth/login",
+                                                                  "host":  [
+                                                                               "{{accountServiceUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "auth",
+                                                                               "login"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Get Profile",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{accountServiceUrl}}/api/accounts/{{accountId}}",
+                                                                  "host":  [
+                                                                               "{{accountServiceUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "accounts",
+                                                                               "{{accountId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Update Profile",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "PUT",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"name\": \"Updated Postman Passenger\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{accountServiceUrl}}/api/accounts/{{accountId}}",
+                                                                  "host":  [
+                                                                               "{{accountServiceUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "accounts",
+                                                                               "{{accountId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Update Status",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "PATCH",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"status\": \"SUSPENDED\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{accountServiceUrl}}/api/accounts/{{accountId}}/status",
+                                                                  "host":  [
+                                                                               "{{accountServiceUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "accounts",
+                                                                               "{{accountId}}",
+                                                                               "status"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Update Role",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "PATCH",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"role\": \"DRIVER\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{accountServiceUrl}}/api/accounts/{{accountId}}/role",
+                                                                  "host":  [
+                                                                               "{{accountServiceUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "accounts",
+                                                                               "{{accountId}}",
+                                                                               "role"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Ride Management Service",
+                     "item":  [
+                                  {
+                                      "name":  "Request a Ride",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\r\n  \"riderId\": 1,\r\n  \"pickupLocation\": \"Colombo Fort\",\r\n  \"destination\": \"Bambalapitiya\",\r\n  \"pickupLatitude\": 6.9344,\r\n  \"pickupLongitude\": 79.8428,\r\n  \"destinationLatitude\": 6.8935,\r\n  \"destinationLongitude\": 79.8554,\r\n  \"distanceKm\": 6.5\r\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "http://localhost:8083/api/rides",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8083",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "rides"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Accept Ride",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{json_web_token_0z26}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "PATCH",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "http://localhost:8083/api/rides/149/accept",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8083",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "rides",
+                                                                               "149",
+                                                                               "accept"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Start Ride",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{json_web_token_0z26}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "PATCH",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "http://localhost:8083/api/rides/149/start",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8083",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "rides",
+                                                                               "149",
+                                                                               "start"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Complete Ride",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{json_web_token_0z26}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "PATCH",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\r\n  \"peakHour\": false,\r\n  \"paymentMethod\": \"CASH\"\r\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "http://localhost:8083/api/rides/149/complete",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8083",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "rides",
+                                                                               "149",
+                                                                               "complete"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Get Ride By ID",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{json_web_token_175w}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "http://localhost:8083/api/rides/150",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8083",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "rides",
+                                                                               "150"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Retry Payment",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{json_web_token_175w}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "PATCH",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\r\n  \"peakHour\": false,\r\n  \"paymentMethod\": \"CASH\"\r\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "http://localhost:8083/api/rides/150/payment/retry",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8083",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "rides",
+                                                                               "150",
+                                                                               "payment",
+                                                                               "retry"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Get Rides",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{json_web_token_175w}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "http://localhost:8083/api/rides",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8083",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "rides"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Cancel Ride",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{json_web_token_0emq}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "PATCH",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\r\n  \"reason\": \"Passenger changed plans\"\r\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "http://localhost:8083/api/rides/146/cancel",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8083",
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "rides",
+                                                                               "146",
+                                                                               "cancel"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "Fare \u0026 Payment Service",
+                     "item":  [
+
+                              ]
+                 },
+                 {
+                     "name":  "Driver Service",
+                     "item":  [
+                                  {
+                                      "name":  "Register Driver",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"accountId\": 1,\n  \"licenseNumber\": \"LIC12345\",\n  \"name\": \"Postman Driver\",\n  \"phone\": \"0771234567\"\n}\n",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{driverServiceUrl}}/api/drivers",
+                                                                  "host":  [
+                                                                               "{{driverServiceUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "drivers"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Attach Vehicle",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{jwtToken}}",
+                                                                         "type":  "text"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"vehicleNumber\": \"CAB-1234\",\n  \"vehicleType\": \"CAR\",\n  \"color\": \"White\",\n  \"capacity\": 4\n}\n",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{driverServiceUrl}}/api/drivers/1/vehicle",
+                                                                  "host":  [
+                                                                               "{{driverServiceUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "drivers",
+                                                                               "1",
+                                                                               "vehicle"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Get Vehicle",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{jwtToken}}",
+                                                                         "type":  "text"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{driverServiceUrl}}/api/drivers/1/vehicle",
+                                                                  "host":  [
+                                                                               "{{driverServiceUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "drivers",
+                                                                               "1",
+                                                                               "vehicle"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Update Availability",
+                                      "request":  {
+                                                      "method":  "PATCH",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{jwtToken}}",
+                                                                         "type":  "text"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"availabilityStatus\": \"AVAILABLE\"\n}\n",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{driverServiceUrl}}/api/drivers/1/availability",
+                                                                  "host":  [
+                                                                               "{{driverServiceUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "drivers",
+                                                                               "1",
+                                                                               "availability"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Update Location",
+                                      "request":  {
+                                                      "method":  "PATCH",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Authorization",
+                                                                         "value":  "Bearer {{jwtToken}}",
+                                                                         "type":  "text"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"currentLatitude\": 7.2906,\n  \"currentLongitude\": 80.6337,\n  \"serviceArea\": \"Kandy\"\n}\n",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{driverServiceUrl}}/api/drivers/1/location",
+                                                                  "host":  [
+                                                                               "{{driverServiceUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "drivers",
+                                                                               "1",
+                                                                               "location"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Get Available Drivers",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{driverServiceUrl}}/api/drivers/available?serviceArea=Kandy",
+                                                                  "host":  [
+                                                                               "{{driverServiceUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "drivers",
+                                                                               "available"
+                                                                           ],
+                                                                  "query":  [
+                                                                                {
+                                                                                    "key":  "serviceArea",
+                                                                                    "value":  "Kandy"
+                                                                                }
+                                                                            ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 }
+             ]
 }
