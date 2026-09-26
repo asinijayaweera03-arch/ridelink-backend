@@ -4,10 +4,13 @@ import lk.sliit.it3130.ride_service.client.DriverServiceClient;
 import lk.sliit.it3130.ride_service.client.PaymentServiceClient;
 import lk.sliit.it3130.ride_service.dto.AvailableDriverResponse;
 import lk.sliit.it3130.ride_service.dto.PaymentRequest;
+import lk.sliit.it3130.ride_service.dto.PaymentResponse;
 import lk.sliit.it3130.ride_service.dto.RideCompletionRequest;
 import lk.sliit.it3130.ride_service.dto.RideRequest;
 import lk.sliit.it3130.ride_service.dto.RideResponse;
 import lk.sliit.it3130.ride_service.exception.NoAvailableDriverException;
+import lk.sliit.it3130.ride_service.exception.PaymentServiceUnavailableException;
+import lk.sliit.it3130.ride_service.model.PaymentRecordStatus;
 import lk.sliit.it3130.ride_service.model.Ride;
 import lk.sliit.it3130.ride_service.model.RideStatus;
 import lk.sliit.it3130.ride_service.repository.RideRepository;
@@ -70,12 +73,18 @@ public class RideService {
 
         /*
          * @PrePersist has not executed yet for a new entity.
-         * Initialize REQUESTED before using the lifecycle state machine.
+         * Initialize the initial values before using the
+         * lifecycle state machine.
          */
         ride.setStatus(RideStatus.REQUESTED);
+        ride.setPaymentStatus(
+                PaymentRecordStatus.NOT_APPLICABLE
+        );
+
         ride.transitionTo(RideStatus.ASSIGNED);
 
-        Ride savedRide = rideRepository.save(ride);
+        Ride savedRide =
+                rideRepository.save(ride);
 
         return mapToResponse(savedRide);
     }
@@ -119,7 +128,8 @@ public class RideService {
 
         ride.transitionTo(RideStatus.ACCEPTED);
 
-        Ride savedRide = rideRepository.save(ride);
+        Ride savedRide =
+                rideRepository.save(ride);
 
         return mapToResponse(savedRide);
     }
@@ -133,15 +143,19 @@ public class RideService {
 
         ride.transitionTo(RideStatus.IN_PROGRESS);
 
-        Ride savedRide = rideRepository.save(ride);
+        Ride savedRide =
+                rideRepository.save(ride);
 
         return mapToResponse(savedRide);
     }
 
     /**
-     * Completes an IN_PROGRESS ride.
+     * Completes an IN_PROGRESS ride and attempts
+     * to record its payment.
      *
-     * Payment failure handling will be improved in Session 8.
+     * The ride is persisted as COMPLETED + PENDING before
+     * Payment Service is contacted. Therefore a downstream
+     * outage does not roll the ride back to IN_PROGRESS.
      */
     public RideResponse completeRide(
             Long rideId,
@@ -150,28 +164,192 @@ public class RideService {
         Ride ride = findRideById(rideId);
 
         /*
-         * Validate lifecycle before contacting Payment Service.
+         * Lifecycle validation happens here.
+         * A valid IN_PROGRESS ride becomes COMPLETED and
+         * completedAt is recorded by the entity.
          */
-        if (!ride.getStatus()
-                .canTransitionTo(RideStatus.COMPLETED)) {
-
-            ride.transitionTo(RideStatus.COMPLETED);
-        }
-
-        PaymentRequest paymentRequest = new PaymentRequest(
-                ride.getId(),
-                ride.getRiderId(),
-                completionRequest.getDistanceKm(),
-                completionRequest.getDurationMin(),
-                completionRequest.getPeakHour(),
-                completionRequest.getPaymentMethod()
-        );
-
-        paymentServiceClient.createPayment(paymentRequest);
-
         ride.transitionTo(RideStatus.COMPLETED);
 
-        Ride savedRide = rideRepository.save(ride);
+        /*
+         * Payment has not been confirmed yet.
+         */
+        ride.setPaymentStatus(
+                PaymentRecordStatus.PENDING
+        );
+
+        /*
+         * Persist completion before calling the
+         * downstream Payment Service.
+         */
+        ride = rideRepository.save(ride);
+
+        Long durationMinutes =
+                ride.tripDurationMinutes();
+
+        if (durationMinutes == null) {
+            throw new IllegalStateException(
+                    "Unable to calculate trip duration"
+            );
+        }
+
+        PaymentRequest paymentRequest =
+                new PaymentRequest(
+                        ride.getId(),
+                        ride.getRiderId(),
+                        ride.getDistanceKm(),
+                        durationMinutes.doubleValue(),
+                        completionRequest.getPeakHour(),
+                        completionRequest.getPaymentMethod()
+                );
+
+        try {
+
+            PaymentResponse paymentResponse =
+                    paymentServiceClient.createPayment(
+                            paymentRequest
+                    );
+
+            applyPaymentResponse(
+                    ride,
+                    paymentResponse
+            );
+
+        } catch (PaymentServiceUnavailableException exception) {
+
+            /*
+             * The ride remains COMPLETED.
+             * PENDING indicates that payment recording
+             * should be retried later.
+             */
+            ride.setPaymentStatus(
+                    PaymentRecordStatus.PENDING
+            );
+        }
+
+        Ride savedRide =
+                rideRepository.save(ride);
+
+        return mapToResponse(savedRide);
+    }
+
+    /**
+     * Retries payment processing for a completed ride.
+     *
+     * PENDING:
+     * The previous attempt did not create a known payment
+     * record, therefore create the payment again.
+     *
+     * FAILED:
+     * Payment Service already created a payment record,
+     * therefore retry that existing record by payment ID.
+     */
+    public RideResponse retryPayment(
+            Long rideId,
+            Boolean peakHour,
+            String paymentMethod) {
+
+        Ride ride = findRideById(rideId);
+
+        if (ride.getStatus() != RideStatus.COMPLETED) {
+            throw new IllegalStateException(
+                    "Payment can only be retried for a completed ride"
+            );
+        }
+
+        if (ride.getPaymentStatus()
+                == PaymentRecordStatus.RECORDED) {
+
+            throw new IllegalStateException(
+                    "Payment has already been recorded"
+            );
+        }
+
+        if (ride.getPaymentStatus()
+                == PaymentRecordStatus.NOT_APPLICABLE) {
+
+            throw new IllegalStateException(
+                    "Payment is not pending or failed"
+            );
+        }
+
+        Long durationMinutes =
+                ride.tripDurationMinutes();
+
+        if (durationMinutes == null) {
+            throw new IllegalStateException(
+                    "Unable to calculate trip duration"
+            );
+        }
+
+        try {
+
+            PaymentResponse paymentResponse;
+
+            /*
+             * FAILED means Payment Service has already
+             * created a payment record.
+             */
+            if (ride.getPaymentStatus()
+                            == PaymentRecordStatus.FAILED
+                    && ride.getPaymentId() != null) {
+
+                paymentResponse =
+                        paymentServiceClient.retryPayment(
+                                ride.getPaymentId()
+                        );
+
+            } else {
+
+                /*
+                 * PENDING means there is no confirmed
+                 * payment record yet.
+                 */
+                ride.setPaymentStatus(
+                        PaymentRecordStatus.PENDING
+                );
+
+                ride = rideRepository.save(ride);
+
+                PaymentRequest paymentRequest =
+                        new PaymentRequest(
+                                ride.getId(),
+                                ride.getRiderId(),
+                                ride.getDistanceKm(),
+                                durationMinutes.doubleValue(),
+                                peakHour,
+                                paymentMethod
+                        );
+
+                paymentResponse =
+                        paymentServiceClient.createPayment(
+                                paymentRequest
+                        );
+            }
+
+            applyPaymentResponse(
+                    ride,
+                    paymentResponse
+            );
+
+        } catch (PaymentServiceUnavailableException exception) {
+
+            /*
+             * Preserve FAILED when an existing failed
+             * payment could not be retried.
+             *
+             * Otherwise preserve PENDING.
+             */
+            if (ride.getPaymentStatus()
+                    != PaymentRecordStatus.FAILED) {
+
+                ride.setPaymentStatus(
+                        PaymentRecordStatus.PENDING
+                );
+            }
+        }
+
+        Ride savedRide =
+                rideRepository.save(ride);
 
         return mapToResponse(savedRide);
     }
@@ -188,10 +366,6 @@ public class RideService {
 
         Ride ride = findRideById(rideId);
 
-        /*
-         * Store the optional reason only when meaningful text
-         * has been supplied.
-         */
         if (reason != null && !reason.isBlank()) {
             ride.setCancellationReason(
                     reason.trim()
@@ -200,9 +374,41 @@ public class RideService {
 
         ride.transitionTo(RideStatus.CANCELLED);
 
-        Ride savedRide = rideRepository.save(ride);
+        Ride savedRide =
+                rideRepository.save(ride);
 
         return mapToResponse(savedRide);
+    }
+
+    /**
+     * Applies the result returned by Payment Service
+     * to the Ride entity.
+     */
+    private void applyPaymentResponse(
+            Ride ride,
+            PaymentResponse paymentResponse) {
+
+        ride.setPaymentId(
+                paymentResponse.getId()
+        );
+
+        ride.setFareAmount(
+                paymentResponse.getAmount()
+        );
+
+        if ("SUCCESS".equalsIgnoreCase(
+                paymentResponse.getStatus())) {
+
+            ride.setPaymentStatus(
+                    PaymentRecordStatus.RECORDED
+            );
+
+        } else {
+
+            ride.setPaymentStatus(
+                    PaymentRecordStatus.FAILED
+            );
+        }
     }
 
     /**
@@ -222,11 +428,20 @@ public class RideService {
      */
     private RideResponse mapToResponse(Ride ride) {
 
-        RideResponse response = new RideResponse();
+        RideResponse response =
+                new RideResponse();
 
-        response.setId(ride.getId());
-        response.setRiderId(ride.getRiderId());
-        response.setDriverId(ride.getDriverId());
+        response.setId(
+                ride.getId()
+        );
+
+        response.setRiderId(
+                ride.getRiderId()
+        );
+
+        response.setDriverId(
+                ride.getDriverId()
+        );
 
         response.setPickupLocation(
                 ride.getPickupLocation()
@@ -260,12 +475,44 @@ public class RideService {
                 ride.getStatus()
         );
 
+        response.setPaymentStatus(
+                ride.getPaymentStatus()
+        );
+
+        response.setPaymentId(
+                ride.getPaymentId()
+        );
+
+        response.setFareAmount(
+                ride.getFareAmount()
+        );
+
         response.setCancellationReason(
                 ride.getCancellationReason()
         );
 
         response.setCreatedAt(
                 ride.getCreatedAt()
+        );
+
+        response.setAssignedAt(
+                ride.getAssignedAt()
+        );
+
+        response.setAcceptedAt(
+                ride.getAcceptedAt()
+        );
+
+        response.setStartedAt(
+                ride.getStartedAt()
+        );
+
+        response.setCompletedAt(
+                ride.getCompletedAt()
+        );
+
+        response.setCancelledAt(
+                ride.getCancelledAt()
         );
 
         return response;

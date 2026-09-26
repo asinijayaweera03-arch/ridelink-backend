@@ -3,12 +3,15 @@ package lk.sliit.it3130.ride_service.service;
 import lk.sliit.it3130.ride_service.client.DriverServiceClient;
 import lk.sliit.it3130.ride_service.client.PaymentServiceClient;
 import lk.sliit.it3130.ride_service.dto.AvailableDriverResponse;
+import lk.sliit.it3130.ride_service.dto.PaymentResponse;
 import lk.sliit.it3130.ride_service.dto.RideCompletionRequest;
 import lk.sliit.it3130.ride_service.dto.RideRequest;
 import lk.sliit.it3130.ride_service.dto.RideResponse;
 import lk.sliit.it3130.ride_service.exception.DriverServiceUnavailableException;
 import lk.sliit.it3130.ride_service.exception.InvalidRideTransitionException;
 import lk.sliit.it3130.ride_service.exception.NoAvailableDriverException;
+import lk.sliit.it3130.ride_service.exception.PaymentServiceUnavailableException;
+import lk.sliit.it3130.ride_service.model.PaymentRecordStatus;
 import lk.sliit.it3130.ride_service.model.Ride;
 import lk.sliit.it3130.ride_service.model.RideStatus;
 import lk.sliit.it3130.ride_service.repository.RideRepository;
@@ -77,6 +80,11 @@ class RideServiceTest {
         assertEquals(
                 RideStatus.ASSIGNED,
                 response.getStatus()
+        );
+
+        assertEquals(
+                PaymentRecordStatus.NOT_APPLICABLE,
+                response.getPaymentStatus()
         );
 
         verify(driverServiceClient)
@@ -205,18 +213,19 @@ class RideServiceTest {
     }
 
     @Test
-    void completeRideShouldCreatePaymentAndMarkRideCompleted() {
+    void completeRideShouldRecordSuccessfulPayment() {
 
-        Ride ride =
-                createRide(RideStatus.IN_PROGRESS);
+        Ride ride = createInProgressRide();
 
         RideCompletionRequest request =
-                new RideCompletionRequest();
+                createCompletionRequest();
 
-        request.setDistanceKm(12.5);
-        request.setDurationMin(30);
-        request.setPeakHour(false);
-        request.setPaymentMethod("CASH");
+        PaymentResponse paymentResponse =
+                createPaymentResponse(
+                        50L,
+                        7250.0,
+                        "SUCCESS"
+                );
 
         when(rideRepository.findById(1L))
                 .thenReturn(Optional.of(ride));
@@ -224,6 +233,9 @@ class RideServiceTest {
         when(rideRepository.save(any(Ride.class)))
                 .thenAnswer(invocation ->
                         invocation.getArgument(0));
+
+        when(paymentServiceClient.createPayment(any()))
+                .thenReturn(paymentResponse);
 
         RideResponse response =
                 rideService.completeRide(
@@ -236,17 +248,265 @@ class RideServiceTest {
                 response.getStatus()
         );
 
+        assertEquals(
+                PaymentRecordStatus.RECORDED,
+                response.getPaymentStatus()
+        );
+
+        assertEquals(
+                50L,
+                response.getPaymentId()
+        );
+
+        assertEquals(
+                7250.0,
+                response.getFareAmount()
+        );
+
         assertNotNull(
                 ride.getCompletedAt()
         );
 
+        verify(paymentServiceClient)
+                .createPayment(any());
+
+        verify(
+                rideRepository,
+                atLeast(2)
+        ).save(ride);
+    }
+
+    @Test
+    void completeRideShouldMarkPaymentFailedWhenPaymentFails() {
+
+        Ride ride = createInProgressRide();
+
+        RideCompletionRequest request =
+                createCompletionRequest();
+
+        PaymentResponse paymentResponse =
+                createPaymentResponse(
+                        51L,
+                        120000.0,
+                        "FAILED"
+                );
+
+        when(rideRepository.findById(1L))
+                .thenReturn(Optional.of(ride));
+
+        when(rideRepository.save(any(Ride.class)))
+                .thenAnswer(invocation ->
+                        invocation.getArgument(0));
+
+        when(paymentServiceClient.createPayment(any()))
+                .thenReturn(paymentResponse);
+
+        RideResponse response =
+                rideService.completeRide(
+                        1L,
+                        request
+                );
+
+        assertEquals(
+                RideStatus.COMPLETED,
+                response.getStatus()
+        );
+
+        assertEquals(
+                PaymentRecordStatus.FAILED,
+                response.getPaymentStatus()
+        );
+
+        assertEquals(
+                51L,
+                response.getPaymentId()
+        );
+
+        assertEquals(
+                120000.0,
+                response.getFareAmount()
+        );
+    }
+
+    @Test
+    void completeRideShouldRemainPendingWhenPaymentServiceIsUnavailable() {
+
+        Ride ride = createInProgressRide();
+
+        RideCompletionRequest request =
+                createCompletionRequest();
+
+        when(rideRepository.findById(1L))
+                .thenReturn(Optional.of(ride));
+
+        when(rideRepository.save(any(Ride.class)))
+                .thenAnswer(invocation ->
+                        invocation.getArgument(0));
+
+        when(paymentServiceClient.createPayment(any()))
+                .thenThrow(
+                        new PaymentServiceUnavailableException(
+                                "Payment Service is currently unavailable"
+                        )
+                );
+
+        RideResponse response =
+                rideService.completeRide(
+                        1L,
+                        request
+                );
+
+        assertEquals(
+                RideStatus.COMPLETED,
+                response.getStatus()
+        );
+
+        assertEquals(
+                PaymentRecordStatus.PENDING,
+                response.getPaymentStatus()
+        );
+
+        assertNull(
+                response.getPaymentId()
+        );
+    }
+
+    @Test
+    void retryPendingPaymentShouldCreateNewPayment() {
+
+        Ride ride = createCompletedRide();
+        ride.setPaymentStatus(
+                PaymentRecordStatus.PENDING
+        );
+
+        PaymentResponse paymentResponse =
+                createPaymentResponse(
+                        60L,
+                        7250.0,
+                        "SUCCESS"
+                );
+
+        when(rideRepository.findById(1L))
+                .thenReturn(Optional.of(ride));
+
+        when(rideRepository.save(any(Ride.class)))
+                .thenAnswer(invocation ->
+                        invocation.getArgument(0));
+
+        when(paymentServiceClient.createPayment(any()))
+                .thenReturn(paymentResponse);
+
+        RideResponse response =
+                rideService.retryPayment(
+                        1L,
+                        false,
+                        "CASH"
+                );
+
+        assertEquals(
+                PaymentRecordStatus.RECORDED,
+                response.getPaymentStatus()
+        );
+
+        assertEquals(
+                60L,
+                response.getPaymentId()
+        );
+
+        verify(paymentServiceClient)
+                .createPayment(any());
+
         verify(
                 paymentServiceClient,
-                times(1)
-        ).createPayment(any());
+                never()
+        ).retryPayment(anyLong());
+    }
 
-        verify(rideRepository)
-                .save(ride);
+    @Test
+    void retryFailedPaymentShouldRetryExistingPayment() {
+
+        Ride ride = createCompletedRide();
+
+        ride.setPaymentStatus(
+                PaymentRecordStatus.FAILED
+        );
+
+        ride.setPaymentId(70L);
+        ride.setFareAmount(120000.0);
+
+        PaymentResponse paymentResponse =
+                createPaymentResponse(
+                        70L,
+                        120000.0,
+                        "SUCCESS"
+                );
+
+        when(rideRepository.findById(1L))
+                .thenReturn(Optional.of(ride));
+
+        when(rideRepository.save(any(Ride.class)))
+                .thenAnswer(invocation ->
+                        invocation.getArgument(0));
+
+        when(paymentServiceClient.retryPayment(70L))
+                .thenReturn(paymentResponse);
+
+        RideResponse response =
+                rideService.retryPayment(
+                        1L,
+                        false,
+                        "CASH"
+                );
+
+        assertEquals(
+                PaymentRecordStatus.RECORDED,
+                response.getPaymentStatus()
+        );
+
+        assertEquals(
+                70L,
+                response.getPaymentId()
+        );
+
+        verify(paymentServiceClient)
+                .retryPayment(70L);
+
+        verify(
+                paymentServiceClient,
+                never()
+        ).createPayment(any());
+    }
+
+    @Test
+    void retryPaymentShouldFailWhenAlreadyRecorded() {
+
+        Ride ride = createCompletedRide();
+
+        ride.setPaymentStatus(
+                PaymentRecordStatus.RECORDED
+        );
+
+        when(rideRepository.findById(1L))
+                .thenReturn(Optional.of(ride));
+
+        IllegalStateException exception =
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> rideService.retryPayment(
+                                1L,
+                                false,
+                                "CASH"
+                        )
+                );
+
+        assertEquals(
+                "Payment has already been recorded",
+                exception.getMessage()
+        );
+
+        verifyNoInteractions(
+                paymentServiceClient
+        );
     }
 
     @Test
@@ -455,8 +715,87 @@ class RideServiceTest {
         return request;
     }
 
+    private RideCompletionRequest createCompletionRequest() {
+
+        RideCompletionRequest request =
+                new RideCompletionRequest();
+
+        request.setPeakHour(false);
+        request.setPaymentMethod("CASH");
+
+        return request;
+    }
+
+    private PaymentResponse createPaymentResponse(
+            Long paymentId,
+            Double amount,
+            String status) {
+
+        PaymentResponse response =
+                new PaymentResponse();
+
+        response.setId(paymentId);
+        response.setRideId(1L);
+        response.setPassengerId(100L);
+        response.setAmount(amount);
+        response.setStatus(status);
+        response.setPaymentMethod("CASH");
+
+        return response;
+    }
+
     private Ride createRide(
             RideStatus status) {
+
+        Ride ride = baseRide();
+
+        ride.setStatus(status);
+
+        return ride;
+    }
+
+    /**
+     * Creates a real IN_PROGRESS ride through the lifecycle
+     * so startedAt is populated.
+     */
+    private Ride createInProgressRide() {
+
+        Ride ride = baseRide();
+
+        ride.setStatus(RideStatus.REQUESTED);
+
+        ride.transitionTo(
+                RideStatus.ASSIGNED
+        );
+
+        ride.transitionTo(
+                RideStatus.ACCEPTED
+        );
+
+        ride.transitionTo(
+                RideStatus.IN_PROGRESS
+        );
+
+        return ride;
+    }
+
+    /**
+     * Creates a real COMPLETED ride with both startedAt
+     * and completedAt populated.
+     */
+    private Ride createCompletedRide() {
+
+        Ride ride =
+                createInProgressRide();
+
+        ride.transitionTo(
+                RideStatus.COMPLETED
+        );
+
+        return ride;
+    }
+
+    private Ride baseRide() {
 
         Ride ride = new Ride();
 
@@ -473,7 +812,6 @@ class RideServiceTest {
         ride.setDestinationLongitude(80.6337);
 
         ride.setDistanceKm(115.0);
-        ride.setStatus(status);
 
         return ride;
     }

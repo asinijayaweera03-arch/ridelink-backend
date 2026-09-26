@@ -9,7 +9,7 @@ public class PaymentRequest {
     private Long rideId;
     private Long passengerId;
     private Double distanceKm;
-    private Integer durationMin;
+    private Double durationMin;
     private Boolean peakHour;
     private String paymentMethod;
 
@@ -20,7 +20,7 @@ public class PaymentRequest {
             Long rideId,
             Long passengerId,
             Double distanceKm,
-            Integer durationMin,
+            Double durationMin,
             Boolean peakHour,
             String paymentMethod) {
 
@@ -56,11 +56,11 @@ public class PaymentRequest {
         this.distanceKm = distanceKm;
     }
 
-    public Integer getDurationMin() {
+    public Double getDurationMin() {
         return durationMin;
     }
 
-    public void setDurationMin(Integer durationMin) {
+    public void setDurationMin(Double durationMin) {
         this.durationMin = durationMin;
     }
 
