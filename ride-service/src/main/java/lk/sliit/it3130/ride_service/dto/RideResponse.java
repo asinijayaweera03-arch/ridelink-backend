@@ -1,5 +1,6 @@
 package lk.sliit.it3130.ride_service.dto;
 
+import lk.sliit.it3130.ride_service.model.PaymentRecordStatus;
 import lk.sliit.it3130.ride_service.model.RideStatus;
 
 import java.time.LocalDateTime;
@@ -26,10 +27,21 @@ public class RideResponse {
 
     private RideStatus status;
 
+    // Payment details
+    private PaymentRecordStatus paymentStatus;
+    private Long paymentId;
+    private Double fareAmount;
+
     // Optional reason when the ride has been cancelled
     private String cancellationReason;
 
+    // Lifecycle timestamps
     private LocalDateTime createdAt;
+    private LocalDateTime assignedAt;
+    private LocalDateTime acceptedAt;
+    private LocalDateTime startedAt;
+    private LocalDateTime completedAt;
+    private LocalDateTime cancelledAt;
 
     public Long getId() {
         return id;
@@ -119,6 +131,30 @@ public class RideResponse {
         this.status = status;
     }
 
+    public PaymentRecordStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(PaymentRecordStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public Long getPaymentId() {
+        return paymentId;
+    }
+
+    public void setPaymentId(Long paymentId) {
+        this.paymentId = paymentId;
+    }
+
+    public Double getFareAmount() {
+        return fareAmount;
+    }
+
+    public void setFareAmount(Double fareAmount) {
+        this.fareAmount = fareAmount;
+    }
+
     public String getCancellationReason() {
         return cancellationReason;
     }
@@ -133,5 +169,45 @@ public class RideResponse {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getAssignedAt() {
+        return assignedAt;
+    }
+
+    public void setAssignedAt(LocalDateTime assignedAt) {
+        this.assignedAt = assignedAt;
+    }
+
+    public LocalDateTime getAcceptedAt() {
+        return acceptedAt;
+    }
+
+    public void setAcceptedAt(LocalDateTime acceptedAt) {
+        this.acceptedAt = acceptedAt;
+    }
+
+    public LocalDateTime getStartedAt() {
+        return startedAt;
+    }
+
+    public void setStartedAt(LocalDateTime startedAt) {
+        this.startedAt = startedAt;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
+    }
+
+    public LocalDateTime getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(LocalDateTime cancelledAt) {
+        this.cancelledAt = cancelledAt;
     }
 }

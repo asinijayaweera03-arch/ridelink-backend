@@ -1,6 +1,7 @@
 package lk.sliit.it3130.ride_service.controller;
 
 import jakarta.validation.Valid;
+import lk.sliit.it3130.ride_service.dto.PaymentRetryRequest;
 import lk.sliit.it3130.ride_service.dto.RideCancellationRequest;
 import lk.sliit.it3130.ride_service.dto.RideCompletionRequest;
 import lk.sliit.it3130.ride_service.dto.RideRequest;
@@ -54,13 +55,6 @@ public class RideController {
      * Returns rides using optional filters.
      *
      * Any authenticated user can access this endpoint.
-     *
-     * Examples:
-     * GET /api/rides
-     * GET /api/rides?passengerId=1
-     * GET /api/rides?driverId=5
-     * GET /api/rides?status=COMPLETED
-     * GET /api/rides?passengerId=1&status=COMPLETED
      */
     @GetMapping
     public ResponseEntity<List<RideResponse>> getRides(
@@ -93,8 +87,6 @@ public class RideController {
      * Returns a ride by ID.
      *
      * Any authenticated user can access this endpoint.
-     *
-     * GET /api/rides/{id}
      */
     @GetMapping("/{id}")
     public ResponseEntity<RideResponse> getRideById(
@@ -110,8 +102,6 @@ public class RideController {
      * Accepts an assigned ride.
      *
      * Only drivers can accept rides.
-     *
-     * PATCH /api/rides/{id}/accept
      */
     @PatchMapping("/{id}/accept")
     @PreAuthorize("hasRole('DRIVER')")
@@ -128,8 +118,6 @@ public class RideController {
      * Starts an accepted ride.
      *
      * Only drivers can start rides.
-     *
-     * PATCH /api/rides/{id}/start
      */
     @PatchMapping("/{id}/start")
     @PreAuthorize("hasRole('DRIVER')")
@@ -143,7 +131,8 @@ public class RideController {
     }
 
     /**
-     * Completes an in-progress ride and creates a payment.
+     * Completes an in-progress ride and attempts
+     * to record its payment.
      *
      * Only drivers can complete rides.
      *
@@ -166,17 +155,34 @@ public class RideController {
     }
 
     /**
+     * Retries payment processing for a completed ride.
+     *
+     * Only drivers can retry payment processing.
+     *
+     * PATCH /api/rides/{id}/payment/retry
+     */
+    @PatchMapping("/{id}/payment/retry")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<RideResponse> retryPayment(
+            @PathVariable Long id,
+            @Valid @RequestBody
+            PaymentRetryRequest request) {
+
+        RideResponse response =
+                rideService.retryPayment(
+                        id,
+                        request.getPeakHour(),
+                        request.getPaymentMethod()
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Cancels a ride.
      *
      * Only passengers can cancel rides.
      * Cancellation reason is optional.
-     *
-     * PATCH /api/rides/{id}/cancel
-     *
-     * Optional request body:
-     * {
-     *   "reason": "Passenger changed travel plans"
-     * }
      */
     @PatchMapping("/{id}/cancel")
     @PreAuthorize("hasRole('PASSENGER')")

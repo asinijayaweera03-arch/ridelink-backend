@@ -36,7 +36,7 @@ public class Ride {
     private Double destinationLatitude;
     private Double destinationLongitude;
 
-    // Trip distance used when completing/payment processing
+    // Trip distance stored when the ride is requested
     private Double distanceKm;
 
     // Current lifecycle status of the ride
@@ -48,6 +48,12 @@ public class Ride {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentRecordStatus paymentStatus;
+
+    // ID of the payment record created by Payment Service
+    private Long paymentId;
+
+    // Final fare calculated by Payment Service
+    private Double fareAmount;
 
     // Optional reason supplied when a ride is cancelled
     @Column(length = 500)
@@ -140,10 +146,11 @@ public class Ride {
     }
 
     /**
-     * Calculates the duration of a completed trip in whole minutes.
+     * Calculates the completed trip duration in whole minutes.
+     * A started and completed trip has a minimum duration of one minute.
      *
-     * @return trip duration in minutes, or null if the ride
-     * has not yet been started/completed
+     * @return trip duration in minutes, or null if lifecycle
+     * timestamps required for the calculation are unavailable
      */
     public Long tripDurationMinutes() {
 
@@ -151,10 +158,15 @@ public class Ride {
             return null;
         }
 
-        return Duration.between(
+        long seconds = Duration.between(
                 startedAt,
                 completedAt
-        ).toMinutes();
+        ).getSeconds();
+
+        return Math.max(
+                1L,
+                (seconds + 59) / 60
+        );
     }
 
     // Getters and setters
@@ -257,6 +269,22 @@ public class Ride {
 
     public void setPaymentStatus(PaymentRecordStatus paymentStatus) {
         this.paymentStatus = paymentStatus;
+    }
+
+    public Long getPaymentId() {
+        return paymentId;
+    }
+
+    public void setPaymentId(Long paymentId) {
+        this.paymentId = paymentId;
+    }
+
+    public Double getFareAmount() {
+        return fareAmount;
+    }
+
+    public void setFareAmount(Double fareAmount) {
+        this.fareAmount = fareAmount;
     }
 
     public String getCancellationReason() {
