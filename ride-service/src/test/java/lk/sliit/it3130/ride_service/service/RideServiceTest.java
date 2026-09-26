@@ -697,6 +697,64 @@ class RideServiceTest {
         ).save(any(Ride.class));
     }
 
+    @Test
+    void retryPaymentShouldKeepPendingWhenPaymentServiceUnavailable() {
+
+        Ride ride = createCompletedRide();
+
+        ride.setPaymentStatus(
+                PaymentRecordStatus.PENDING
+        );
+
+        when(rideRepository.findById(1L))
+                .thenReturn(Optional.of(ride));
+
+        when(rideRepository.save(any(Ride.class)))
+                .thenAnswer(invocation ->
+                        invocation.getArgument(0));
+
+        when(paymentServiceClient.createPayment(any()))
+                .thenThrow(
+                        new PaymentServiceUnavailableException(
+                                "Payment Service is unavailable"
+                        )
+                );
+
+        RideResponse response =
+                rideService.retryPayment(
+                        1L,
+                        false,
+                        "CASH"
+                );
+
+        assertEquals(
+                RideStatus.COMPLETED,
+                response.getStatus()
+        );
+
+        assertEquals(
+                PaymentRecordStatus.PENDING,
+                response.getPaymentStatus()
+        );
+
+        assertNull(
+                response.getPaymentId()
+        );
+
+        assertEquals(
+                PaymentRecordStatus.PENDING,
+                ride.getPaymentStatus()
+        );
+
+        verify(paymentServiceClient)
+                .createPayment(any());
+
+        verify(
+        	rideRepository,
+        	times(2)
+	).save(ride);
+    }
+
     private RideRequest createRideRequest() {
 
         RideRequest request =
