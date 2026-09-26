@@ -7,6 +7,7 @@ import lk.sliit.it3130.ride_service.dto.RideResponse;
 import lk.sliit.it3130.ride_service.service.RideService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -28,9 +29,12 @@ public class RideController {
     /**
      * Creates a new ride request.
      *
+     * Only passengers can request rides.
+     *
      * POST /api/rides
      */
     @PostMapping
+    @PreAuthorize("hasRole('PASSENGER')")
     public ResponseEntity<RideResponse> createRide(
             @Valid @RequestBody RideRequest request) {
 
@@ -43,6 +47,8 @@ public class RideController {
 
     /**
      * Returns a ride by ID.
+     *
+     * Any authenticated user can access this endpoint.
      *
      * GET /api/rides/{id}
      */
@@ -58,9 +64,12 @@ public class RideController {
     /**
      * Accepts an assigned ride.
      *
+     * Only drivers can accept rides.
+     *
      * PATCH /api/rides/{id}/accept
      */
     @PatchMapping("/{id}/accept")
+    @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<RideResponse> acceptRide(
             @PathVariable Long id) {
 
@@ -72,9 +81,12 @@ public class RideController {
     /**
      * Starts an accepted ride.
      *
+     * Only drivers can start rides.
+     *
      * PATCH /api/rides/{id}/start
      */
     @PatchMapping("/{id}/start")
+    @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<RideResponse> startRide(
             @PathVariable Long id) {
 
@@ -86,9 +98,12 @@ public class RideController {
     /**
      * Completes an in-progress ride and creates a payment.
      *
+     * Only drivers can complete rides.
+     *
      * PATCH /api/rides/{id}/complete
      */
     @PatchMapping("/{id}/complete")
+    @PreAuthorize("hasRole('DRIVER')")
     public ResponseEntity<RideResponse> completeRide(
             @PathVariable Long id,
             @Valid @RequestBody RideCompletionRequest request) {
@@ -102,9 +117,12 @@ public class RideController {
     /**
      * Cancels a ride.
      *
+     * Only passengers can cancel rides.
+     *
      * PATCH /api/rides/{id}/cancel
      */
     @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('PASSENGER')")
     public ResponseEntity<RideResponse> cancelRide(
             @PathVariable Long id) {
 
