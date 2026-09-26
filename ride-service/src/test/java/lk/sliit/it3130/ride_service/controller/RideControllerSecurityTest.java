@@ -11,6 +11,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -135,7 +136,7 @@ class RideControllerSecurityTest {
     @WithMockUser(roles = "PASSENGER")
     void passengerShouldBeAllowedToCancelRide() throws Exception {
 
-        when(rideService.cancelRide(1L))
+        when(rideService.cancelRide(1L, null))
                 .thenReturn(new RideResponse());
 
         mockMvc.perform(
@@ -143,7 +144,8 @@ class RideControllerSecurityTest {
                 )
                 .andExpect(status().isOk());
 
-        verify(rideService).cancelRide(1L);
+        verify(rideService)
+                .cancelRide(1L, null);
     }
 
     @Test

@@ -60,6 +60,37 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles invalid ride lifecycle transitions.
+     *
+     * Example:
+     * IN_PROGRESS -> CANCELLED is invalid because
+     * IN_PROGRESS can only transition to COMPLETED.
+     */
+    @ExceptionHandler(InvalidRideTransitionException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidRideTransitionException(
+            InvalidRideTransitionException exception,
+            HttpServletRequest request) {
+
+        String message =
+                "Invalid ride transition. Current status: "
+                        + exception.getCurrentStatus()
+                        + ". Allowed next states: "
+                        + exception.getAllowedNextStates();
+
+        ApiErrorResponse errorResponse = new ApiErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                message,
+                request.getRequestURI()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(errorResponse);
+    }
+
+    /**
      * Handles cases where a requested ride cannot be found.
      */
     @ExceptionHandler(IllegalArgumentException.class)
@@ -81,7 +112,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handles invalid ride lifecycle transitions.
+     * Handles other illegal ride states.
      */
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ApiErrorResponse> handleIllegalStateException(
@@ -113,7 +144,9 @@ public class GlobalExceptionHandler {
                 .getFieldErrors()
                 .stream()
                 .map(error ->
-                        error.getField() + ": " + error.getDefaultMessage())
+                        error.getField()
+                                + ": "
+                                + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
 
         ApiErrorResponse errorResponse = new ApiErrorResponse(

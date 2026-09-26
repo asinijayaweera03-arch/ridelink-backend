@@ -1,5 +1,6 @@
 package lk.sliit.it3130.ride_service.model;
 
+import lk.sliit.it3130.ride_service.exception.InvalidRideTransitionException;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -84,13 +85,23 @@ class RideTest {
         Ride ride = new Ride();
         ride.setStatus(RideStatus.IN_PROGRESS);
 
-        IllegalStateException exception =
+        InvalidRideTransitionException exception =
                 assertThrows(
-                        IllegalStateException.class,
+                        InvalidRideTransitionException.class,
                         () -> ride.transitionTo(
                                 RideStatus.CANCELLED
                         )
                 );
+
+        assertEquals(
+                RideStatus.IN_PROGRESS,
+                exception.getCurrentStatus()
+        );
+
+        assertEquals(
+                RideStatus.IN_PROGRESS.allowedNextStates(),
+                exception.getAllowedNextStates()
+        );
 
         assertTrue(
                 exception.getMessage().contains(

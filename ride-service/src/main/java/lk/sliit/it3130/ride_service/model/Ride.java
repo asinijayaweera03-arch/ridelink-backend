@@ -1,6 +1,7 @@
 package lk.sliit.it3130.ride_service.model;
 
 import jakarta.persistence.*;
+import lk.sliit.it3130.ride_service.exception.InvalidRideTransitionException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -44,9 +45,13 @@ public class Ride {
     private RideStatus status;
 
     // Payment recording status
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	private PaymentRecordStatus paymentStatus;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentRecordStatus paymentStatus;
+
+    // Optional reason supplied when a ride is cancelled
+    @Column(length = 500)
+    private String cancellationReason;
 
     // Time when the ride request was created
     @Column(nullable = false, updatable = false)
@@ -101,9 +106,9 @@ public class Ride {
         }
 
         if (!status.canTransitionTo(nextStatus)) {
-            throw new IllegalStateException(
-                    "Invalid ride transition from "
-                            + status + " to " + nextStatus
+            throw new InvalidRideTransitionException(
+                    status,
+                    status.allowedNextStates()
             );
         }
 
@@ -252,6 +257,14 @@ public class Ride {
 
     public void setPaymentStatus(PaymentRecordStatus paymentStatus) {
         this.paymentStatus = paymentStatus;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
     }
 
     public LocalDateTime getCreatedAt() {
